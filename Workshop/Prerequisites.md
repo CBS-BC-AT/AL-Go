@@ -1,7 +1,9 @@
 # Prerequisites
+
 In order to complete this workshop, you will need a few things. Nothing big, and the workshop builds solely on free functionality of GitHub, because it is using public repositories. In order to use private repositories, you will need a paid SKU for your GitHub organization (Teams should suffice).
 
 You will need:
+
 1. A GitHub account
    - Free should be enough to follow the workshop
 1. A GitHub organizational account
@@ -29,5 +31,6 @@ Later in the workshop, when we want to run tests, we will need to create a conta
 
 With this... - let's get started!
 
----
-[index](Index.md)&nbsp;&nbsp;[next](GetStarted.md)
+______________________________________________________________________
+
+[index](Index.md)  [next](GetStarted.md)

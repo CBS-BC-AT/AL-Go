@@ -1,14 +1,17 @@
 # Calculate Artifact Names
+
 Calculate Artifact Names for AL-Go workflows
 
 ## INPUT
 
 ### ENV variables
+
 | Name | Description |
 | :-- | :-- |
 | Settings | env.Settings must be set by a prior call to the ReadSettings Action |
 
 ### Parameters
+
 | Name | Required | Description | Default value |
 | :-- | :-: | :-- | :-- |
 | shell | | The shell (powershell or pwsh) in which the PowerShell script in this action should run | powershell |
@@ -19,6 +22,7 @@ Calculate Artifact Names for AL-Go workflows
 ## OUTPUT
 
 ### ENV variables
+
 | Name | Description |
 | :-- | :-- |
 | ThisBuildAppsArtifactsName | Artifact name for apps being built in the current workflow run |
@@ -34,6 +38,7 @@ Calculate Artifact Names for AL-Go workflows
 | BuildMode | Build mode used when building the artifacts |
 
 ### OUTPUT variables
+
 | Name | Description |
 | :-- | :-- |
 | ThisBuildAppsArtifactsName | Artifact name for apps being built in the current workflow run |
