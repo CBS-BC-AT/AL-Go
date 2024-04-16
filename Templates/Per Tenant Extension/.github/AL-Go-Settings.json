@@ -13,7 +13,7 @@
   "rulesetFile": "CegekaAT.ruleset.json",
   "runs-on": "ubuntu-latest",
   "skipUpgrade": true,
-  "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@main",
+  "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@update-cleanup",
   "type": "PTE",
   "useCompilerFolder": true
 }
