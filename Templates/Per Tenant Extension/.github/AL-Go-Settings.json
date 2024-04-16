@@ -1,4 +1,19 @@
 {
+  "buildModes": [
+    "Default"
+  ],
+  "customCodeCops": [
+    "https://github.com/StefanMaron/BusinessCentral.LinterCop/releases/latest/download/BusinessCentral.LinterCop.current.dll"
+  ],
+  "doNotPublishApps": true,
+  "enableCodeCop": true,
+  "enablePerTenantExtensionCop": false,
+  "enableUICop": true,
+  "githubRunner": "ubuntu-latest",
+  "rulesetFile": "CegekaAT.ruleset.json",
+  "runs-on": "ubuntu-latest",
+  "skipUpgrade": true,
+  "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@main",
   "type": "PTE",
-  "templateUrl": "https://github.com/microsoft/AL-Go-PTE@main"
+  "useCompilerFolder": true
 }
