@@ -75,18 +75,18 @@
     "gitlens.advanced.fileHistoryFollowsRenames": true,
     "gitlens.blame.ignoreWhitespace": true,
     "json.schemas": [
-        {
-            "fileMatch": [
-                "/.github/AL-Go-Settings.json"
-            ],
-            "url": "https://raw.githubusercontent.com/microsoft/AL-Go/v4.1/Schema/algoreposettingssyntax.json"
-        },
-        {
-            "fileMatch": [
-                "/.AL-Go/settings.json"
-            ],
-            "url": "https://github.com/microsoft/AL-Go/blob/v4.1/Schema/algosettingssyntax.json"
-        }
+    {
+      "fileMatch": [
+        "/.github/AL-Go-Settings.json"
+      ],
+      "url": "https://raw.githubusercontent.com/microsoft/AL-Go/v5.0/Schema/algoreposettingssyntax.json"
+    },
+    {
+      "fileMatch": [
+        "/.AL-Go/settings.json"
+      ],
+      "url": "https://github.com/microsoft/AL-Go/blob/v5.0/Schema/algosettingssyntax.json"
+    }
     ]
   }
 }
