@@ -1,8 +1,92 @@
 {
-    "folders": [
-        {
-            "path": ".AL-Go"
-        }
+  "folders": [
+    {
+      "path": ".AL-Go"
+    },
+    {
+      "path": ".github"
+    },
+    {
+      "path": "dependencies"
+    },
+    {
+      "path": "resources"
+    },
+    {
+      "path": "scripts"
+    }
+  ],
+  "settings": {
+    "al.assemblyProbingPaths": [
+      "./.netpackages",
+      "C:/Windows/assembly/"
     ],
-    "settings": {}
+    "al.backgroundCodeAnalysis": true,
+    "al.codeAnalyzers": [
+      "${CodeCop}",
+      "${UICop}",
+      "${analyzerFolder}BusinessCentral.LinterCop.dll"
+    ],
+    "al.enableCodeActions": true,
+    "al.enableCodeAnalysis": true,
+    "al.enableExternalRulesets": true,
+    "al.ruleSetPath": "../CegekaAT.ruleset.json",
+    "alOutline.addDataItemToReportColumnName": true,
+    "alOutline.addToolTipsToPageFields": true,
+    "alOutline.codeCleanupActions": [
+      "AddApplicationAreas",
+      "AddMissingParentheses",
+      "ConvertObjectIdsToNames",
+      "FixIdentifiersCase",
+      "FixKeywordsCase",
+      "MakeFlowFieldsReadOnly",
+      "RemoveEmptyTriggers",
+      "RemoveEmptySections",
+      "RemoveStrSubstNoFromError",
+      "RemoveWithStatements",
+      "RemoveUnusedVariables",
+      "RemoveEmptyLines",
+      "SortVariables",
+      "TrimTrailingWhitespace",
+      "FormatDocument"
+    ],
+    "alOutline.fixCaseRemovesQuotesFromDataTypeIdentifiers": true,
+    "alOutline.fixCodeCopMissingParenthesesOnSave": true,
+    "alOutline.idReservationProvider": "ALObjectIdNinja",
+    "alOutline.openDefinitionInNewTab": true,
+    "CRS.ExtensionObjectNamePattern": "<Prefix><BaseName><Suffix>",
+    "CRS.FileNamePattern": "<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",
+    "CRS.FileNamePatternExtensions": "<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",
+    "CRS.FileNamePatternPageCustomizations": "<ObjectNameShort>.<ObjectTypeShortPascalCase>.al",
+    "CRS.ObjectNamePrefix": "",
+    "CRS.ObjectNameSuffix": "",
+    "CRS.RenameWithGit": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modifications",
+    "files.autoSave": "afterDelay",
+    "files.trimTrailingWhitespace": true,
+    "githubPullRequests.assignCreated": "${user}",
+    "githubPullRequests.defaultMergeMethod": "squash",
+    "githubPullRequests.pullBranch": "always",
+    "githubPullRequests.pushBranch": "always",
+    "gitlens.advanced.blame.customArguments": [
+      "-CCC"
+    ],
+    "gitlens.advanced.fileHistoryFollowsRenames": true,
+    "gitlens.blame.ignoreWhitespace": true,
+    "json.schemas": [
+        {
+            "fileMatch": [
+                "/.github/AL-Go-Settings.json"
+            ],
+            "url": "https://raw.githubusercontent.com/microsoft/AL-Go/v4.1/Schema/algoreposettingssyntax.json"
+        },
+        {
+            "fileMatch": [
+                "/.AL-Go/settings.json"
+            ],
+            "url": "https://github.com/microsoft/AL-Go/blob/v4.1/Schema/algosettingssyntax.json"
+        }
+    ]
+  }
 }
