@@ -156,11 +156,10 @@ jobs:
             echo "::debug::Full message: $msg"
             last_line=$(echo "$msg" | tail -n 1)
             echo "::debug::Last line: $last_line"
-            if [[ $last_line != "CP:"* ]]; then
+            commit=$(echo "$body" | grep -oP '(?<=\(cherry picked from commit )\S*(?=\))')
+            if [[ -z "$commit" ]]; then
               continue
             fi
-
-            commit=${last_line#CP:}
             echo "::debug::Commit: $commit"
             if [[ $(git rev-parse --verify "$commit" 2>/dev/null) ]]; then
               commit=${commit:0:7}
@@ -288,27 +287,29 @@ jobs:
           echo "Cherry-picking the following commits:"
           echo "${feature_commits[*]}"
           successful_commits=()
+          success=true
 
           for commit in "${feature_commits[@]}"; do
-            message=$(git log --format=%s -n 1 $commit)
-            message=$message'
-
-          CP:'$commit
-            git cherry-pick $commit 1>/dev/null || true
+            git cherry-pick --allow-empty -x $commit 1>/dev/null || true
             if [ -n "$(git status --porcelain | grep '^U')" ]; then
-              echo '::error::Cherry-pick failed. Please see ${{ github.event.issue.pull_request.html_url }} for more details.'
-              exit 1
+              $success=false
+              break
             fi
-            git commit --amend -m "$message"
             successful_commits+=($commit)
           done
-          echo "Cherry-pick successful."
 
           {
             echo "PICKED_COMMITS<<EOF"
             echo "${successful_commits[*]}"
             echo "EOF"
           } >> $GITHUB_ENV
+
+          if [ $success == false ]; then
+            echo '::error::Cherry-pick failed. Please see ${{ github.event.issue.pull_request.html_url }} for more details.'
+            exit 1
+          else
+            echo "Cherry-pick successful."
+          fi
 
       - name: "On success: Commit & push cherry-picked changes"
         if: ${{ env.SKIP_ALL == 'false' && steps.cherry_pick.outcome == 'success' }}
@@ -369,7 +370,7 @@ jobs:
       - name: Create/Update pull request
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          feature_title=$(printf '%s' '${{ github.event.issue.title }}' | sed 's/"/\\"/g')
+          feature_title=$(printf '%s' '${{ github.event.issue.title }}')
           echo "Old PR title: $feature_title"
           body='This automated pull request adds the cherry-picked changes from `${{ steps.pull_request.outputs.HEAD_REF }}` to `${{ env.TEST_BRANCH }}`.
           See ${{ github.event.issue.pull_request.html_url }} for more details.'
@@ -444,7 +445,7 @@ jobs:
           git fetch origin ${{ env.FEATURE_TEST_BRANCH }}
           git checkout ${{ env.FEATURE_TEST_BRANCH }}
           git pull origin ${{ env.FEATURE_TEST_BRANCH }}
-          git cherry-pick '"$failed_commit"'
+          git cherry-pick -x '"$failed_commit"'
           ```
           2) Resolve the merge conflicts and push the changes.
           3) Re-run the workflow by commenting `!update-test-branch` in ${{ github.event.issue.pull_request.html_url }} again.'
