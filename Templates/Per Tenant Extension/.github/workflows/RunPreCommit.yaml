@@ -8,6 +8,8 @@ on:
 
 jobs:
     pre-commit:
+        name: Run Pre-Commit
+        if: github.event.pull_request.draft == false
         runs-on: ubuntu-latest
 
         steps:
