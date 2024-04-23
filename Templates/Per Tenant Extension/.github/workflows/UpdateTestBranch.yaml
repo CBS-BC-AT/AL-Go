@@ -13,6 +13,7 @@ env:
   BOT_LABEL: Automated
   DISABLE_COMMENTS: false
   FEATURE_TEST_BRANCH: 'test/feature-branch'
+  USE_GITHUB_TOKEN: false
   SKIP_ALL: false
   FEATURE_COMMITS: ''
   PICKED_COMMITS: ''
@@ -53,6 +54,7 @@ jobs:
 
           if [ -z "$pr_info" ]; then
             echo "::error::Failed to get PR information. Please try again."
+            echo "SKIP_ALL=true" >> $GITHUB_ENV
             exit 1
           fi
 
@@ -76,16 +78,30 @@ jobs:
           echo "COMMIT_COMMENT_TAG=${{ vars.UPDATETESTBRANCH_COMMIT_COMMENT_TAG || env.COMMIT_COMMENT_TAG }}" >> $GITHUB_ENV
           echo "BOT_LABEL=${{ vars.UPDATETESTBRANCH_BOT_LABEL || env.BOT_LABEL }}" >> $GITHUB_ENV
           echo "DISABLE_COMMENTS=${{ vars.UPDATETESTBRANCH_DISABLE_COMMENTS || env.DISABLE_COMMENTS }}" >> $GITHUB_ENV
+          echo "USE_GITHUB_TOKEN=${{ vars.UPDATETESTBRANCH_USE_GITHUB_TOKEN || env.USE_GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Setup GH_TOKEN
+        if: ${{ env.SKIP_ALL == 'false' && env.USE_GITHUB_TOKEN == 'false' }}
+        run: |
+          token=${{ secrets.GHTOKENWORKFLOW }}
+          if [ -z "$token" ]; then
+            echo "SKIP_ALL=true" >> $GITHUB_ENV
+            echo "::error::The GHTOKENWORKFLOW secret is required."
+            exit 1
+          fi
+          echo "GH_TOKEN=$token" >> $GITHUB_ENV
 
       - name: Check PR settings
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
           if [ "${{ steps.pull_request.outputs.HEAD_REF }}" == "${{ env.TEST_BRANCH }}" ]; then
             echo "::error::You cannot update the test branch `${{ env.TEST_BRANCH }}` with itself."
+            echo "SKIP_ALL=true" >> $GITHUB_ENV
             exit 1
           fi
           if [ "${{ steps.pull_request.outputs.BASE_REF }}" == ${{ env.TEST_BRANCH }} ]; then
             echo "::error::The pull request ${{ github.event.issue.pull_request.html_url }} is already targeting the test branch `${{ env.TEST_BRANCH }}`."
+            echo "SKIP_ALL=true" >> $GITHUB_ENV
             exit 1
           fi
 
@@ -94,6 +110,7 @@ jobs:
         run: |
           if [ -z "$(git ls-remote --heads origin ${{ env.TEST_BRANCH }})" ]; then
             echo "::error::Branch ${{ env.TEST_BRANCH }} does not exist. Please create the branch or define a custom name by editing the repository variable 'UPDATETESTBRANCH_TEST_BRANCH' and try again."
+            echo "SKIP_ALL=true" >> $GITHUB_ENV
             exit 1
           fi
 
