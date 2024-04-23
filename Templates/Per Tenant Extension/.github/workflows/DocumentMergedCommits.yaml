@@ -186,13 +186,14 @@ jobs:
       - name: Comment on the original pull request
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          if [ -z "${{ steps.set-comment-body.outputs.COMMENT_BODY }}" ]; then
+          comment_body=${{ steps.set-comment-body.outputs.COMMENT_BODY}}
+          if [ -z "$comment_body" ]; then
             echo "No commits to document."
             exit 0
           fi
-          echo "${{ steps.set-comment-body.outputs.COMMENT_BODY }}"
+          echo "$comment_body"
           gh pr comment ${{ env.FEATURE_PR_NUMBER }} --body '${{ env.COMMIT_COMMENT_TAG }}
-          ${{ steps.set-comment-body.outputs.COMMENT_BODY }}'
+          $comment_body'
 
   delete-head:
     name: Delete head branch
@@ -201,15 +202,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Git
-        if: ${{ env.SKIP_ALL == 'false' }}
         run: |
           git config --global user.name github-actions[bot]
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Checkout repository
-        if: ${{ env.SKIP_ALL == 'false' }}
         uses: actions/checkout@v4
 
       - name: Delete head branch
         run: |
-          git push origin --delete ${{ github.head_ref }}
+            branch=${{ github.head_ref }}
+            if git rev-parse --verify $branch >/dev/null 2>&1; then
+              git push origin --delete $branch
+            else
+              echo "Unable to locate branch $branch - It most likely has already been deleted."
+            fi
