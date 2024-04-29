@@ -15,5 +15,6 @@
   "skipUpgrade": true,
   "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@main",
   "type": "PTE",
-  "useCompilerFolder": true
+  "useCompilerFolder": true,
+  "vsixFile": "latest"
 }
