@@ -212,7 +212,7 @@ jobs:
       - name: Delete head branch
         run: |
             branch=${{ github.head_ref }}
-            if git rev-parse --verify $branch >/dev/null 2>&1; then
+            if git ls-remote --heads origin $branch >/dev/null 2>&1; then
               git push origin --delete $branch
             else
               echo "Unable to locate branch $branch - It most likely has already been deleted."
