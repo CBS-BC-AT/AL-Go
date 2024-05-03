@@ -64,17 +64,14 @@ function Deploy-App {
         [string]$srvInst,
         [System.IO.FileInfo]$app
     )
-    Write-Host "`nDeploying app '$($app.Name)'"
     $appPath = $app.FullName
+    Write-Host "`nDeploying app '$($app.Name)'"
+    Write-Host "::debug::ScriptPath: $deployScriptPath"
+    Write-Host "::debug::srvInst: $srvInst"
+    Write-Host "::debug::app: $appPath"
 
     # Deploy the app using the downloaded script
-    try {
-        Invoke-Expression -Command "& '$deployScriptPath' -srvInst '$srvInst' -appPath '$appPath'"
-    }
-    catch {
-        Write-Error "$_"
-        exit 1
-    }
+    Invoke-Expression -Command "& '$deployScriptPath' -srvInst '$srvInst' -appPath '$appPath'"
 }
 
 function Remove-TempFiles {
