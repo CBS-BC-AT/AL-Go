@@ -22,10 +22,8 @@ function New-TemporaryFolder {
 
 function Get-AppList {
     param (
-        [string[]]$appPaths,
         [string]$outputPath
     )
-    Copy-AppFilesToFolder -appFiles $appPaths -folder $outputPath | Out-Null
     $appsList = @(Get-ChildItem -Path $outputPath -Filter *.app)
     if (-not $appsList -or $appsList.Count -eq 0) {
         Write-Host "::error::No apps to publish found."
@@ -85,7 +83,8 @@ function Remove-TempFiles {
 $ErrorActionPreference = "Stop"
 $parameters | ConvertTo-Json -Depth 99 | Out-Host
 $tempPath = New-TemporaryFolder
-$appsList = Get-AppList -appFiles $parameters.apps -outputPath $tempPath
+Copy-AppFilesToFolder -appFiles $parameters.apps -folder $tempPath | Out-Null
+$appsList = Get-AppList -outputPath $tempPath
 $deployScriptPath = Get-PublishScript -outputPath $tempPath
 
 foreach ($app in $appsList) {
