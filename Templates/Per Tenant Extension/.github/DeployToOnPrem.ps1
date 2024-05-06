@@ -45,7 +45,7 @@ function Get-AppList {
 
 function Get-PublishScript {
     param (
-        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.0/powershell/Install-NAVApp.ps1",
+        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.1/powershell/Install-NAVApp.ps1",
         [string]$outputPath
     )
     Write-Host "`nDownloading the deployment script"
