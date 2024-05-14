@@ -46,11 +46,14 @@ function Get-AppList {
 function Get-PublishScript {
     param (
         [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.3/powershell/Install-NAVApp.ps1",
+        [Parameter(Mandatory=$true)]
         [string]$outputPath
     )
     Write-Host "`nDownloading the deployment script"
     Write-Host "URL: $url"
-    $deployScriptPath = Join-Path -Path $outputPath -ChildPath "Deploy-ToBC.ps1"
+    Test-Path -Path $outputPath
+    $filename = [System.IO.Path]::GetFileName($url)
+    $deployScriptPath = Join-Path -Path $outputPath -ChildPath $filename
     Invoke-WebRequest -Uri $url -OutFile $deployScriptPath
     Write-Host "Downloaded the deployment script to $deployScriptPath"
 
@@ -76,7 +79,7 @@ function Remove-TempFiles {
     param (
         [string]$tempPath
     )
-    Remove-Item -Path $outputPath -Recurse -Force | Out-Null
+    Remove-Item -Path $tempPath -Recurse -Force | Out-Null
     Write-Host "Removed temporary files."
 }
 
