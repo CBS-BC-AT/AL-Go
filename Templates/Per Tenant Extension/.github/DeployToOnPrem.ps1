@@ -14,7 +14,7 @@ Param(
 )
 
 function New-TemporaryFolder {
-    $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) ([GUID]::NewGuid().ToString())
+    $tempPath = Join-Path -Path $PWD -ChildPath "_temp"
     New-Item -ItemType Directory -Path $tempPath | Out-Null
 
     return $tempPath
@@ -49,9 +49,11 @@ function Get-PublishScript {
         [Parameter(Mandatory=$true)]
         [string]$outputPath
     )
-    Write-Host "`nDownloading the deployment script"
+    Write-Host "`nDownloading the deployment script..."
     Write-Host "URL: $url"
-    Test-Path -Path $outputPath
+    if (-not (Test-Path -Path $outputPath)) {
+        throw "Output path '$outputPath' does not exist."
+    }
     $filename = [System.IO.Path]::GetFileName($url)
     $deployScriptPath = Join-Path -Path $outputPath -ChildPath $filename
     Invoke-WebRequest -Uri $url -OutFile $deployScriptPath
@@ -62,8 +64,12 @@ function Get-PublishScript {
 
 function Deploy-App {
     param (
+        [Parameter(Mandatory=$true)]
         [string]$srvInst,
-        [System.IO.FileInfo]$app
+        [Parameter(Mandatory=$true)]
+        [System.IO.FileInfo]$app,
+        [Parameter(Mandatory=$true)]
+        [string]$deployScriptPath
     )
     $appPath = $app.FullName
     Write-Host "`nDeploying app '$($app.Name)'"
@@ -72,7 +78,9 @@ function Deploy-App {
     Write-Host "::debug::app: $appPath"
 
     # Deploy the app using the downloaded script
-    Invoke-Expression -Command "& '$deployScriptPath' -srvInst '$srvInst' -appPath '$appPath'"
+    $command = "& '$deployScriptPath' -srvInst '$srvInst' -appPath '$appPath'"
+    Write-Host "Invoke-Expression -Command $command"
+    Invoke-Expression -Command $command
 }
 
 function Remove-TempFiles {
@@ -91,7 +99,7 @@ $appsList = Get-AppList -outputPath $tempPath
 $deployScriptPath = Get-PublishScript -outputPath $tempPath
 
 foreach ($app in $appsList) {
-    Deploy-App -srvInst $parameters.EnvironmentName -app $app
+    Deploy-App -srvInst $parameters.EnvironmentName -app $app -deployScriptPath $deployScriptPath
 }
 
 Write-Host "`nSuccessfully deployed all apps to $($parameters.EnvironmentName)"
