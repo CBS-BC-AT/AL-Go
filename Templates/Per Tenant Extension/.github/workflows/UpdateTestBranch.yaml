@@ -34,6 +34,13 @@ jobs:
           git config --global user.name github-actions[bot]
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Add reaction to comment
+        if: ${{ env.SKIP_ALL == 'false' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: rocket
+
       - name: Checkout repository
         if: ${{ env.SKIP_ALL == 'false' }}
         uses: actions/checkout@v4
@@ -327,6 +334,13 @@ jobs:
           else
             echo "Cherry-pick successful."
           fi
+
+      - name: Add reaction based on cherry-pick outcome
+        if: ${{ env.SKIP_ALL == 'false' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: ${{ steps.cherry_pick.outcome == 'success' && '+1' || '-1' }}
 
       - name: "On success: Commit & push cherry-picked changes"
         if: ${{ env.SKIP_ALL == 'false' && steps.cherry_pick.outcome == 'success' }}
