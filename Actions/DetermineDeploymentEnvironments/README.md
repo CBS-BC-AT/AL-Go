@@ -16,7 +16,7 @@ Determines the environments to be used for a build or a publish
 | Name | Required | Description | Default value |
 | :-- | :-: | :-- | :-- |
 | shell | | The shell (powershell or pwsh) in which the PowerShell script in this action should run | powershell |
-| getEnvironments | Yes | Specifies the pattern of the environments you want to retrieve (\* for all) | |
+| getEnvironments | Yes | Specifies the pattern of the environments you want to retrieve (* for all) | |
 | type | Yes | Type of deployment (CD or Publish) | |
 
 ## OUTPUT
