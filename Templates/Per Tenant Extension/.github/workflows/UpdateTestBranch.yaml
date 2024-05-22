@@ -168,28 +168,32 @@ jobs:
           git fetch origin ${{ env.TEST_BRANCH }}
           git fetch origin ${{ env.FEATURE_TEST_BRANCH }}
 
-          feature_test_bodies=$(git log --reverse --pretty=format:%b origin/${{ env.TEST_BRANCH }}..origin/${{ env.FEATURE_TEST_BRANCH }})
+          commit_separator='---COMMIT---'
+          feature_test_bodies=$(git log --reverse --pretty=format:"%b$commit_separator" origin/${{ env.TEST_BRANCH }}..origin/${{ env.FEATURE_TEST_BRANCH }})
 
           if [ -z "$feature_test_bodies" ]; then
             echo "::notice::No new commits in ${{ env.FEATURE_TEST_BRANCH }} found."
-            exit 0
           fi
 
           picked_commits=()
+          old_IFS=$IFS
+          IFS=(echo $commit_separator)
           for msg in $feature_test_bodies; do
+            msg=${msg%$'\n'"$commit_separator"}
             echo "::debug::Full message: $msg"
             last_line=$(echo "$msg" | tail -n 1)
             echo "::debug::Last line: $last_line"
-            commit=$(echo "$body" | grep -oP '(?<=\(cherry picked from commit )\S*(?=\))')
+            commit=$(echo "$last_line" | grep -oP '(?<=\(cherry picked from commit )\S*(?=\))')
             if [[ -z "$commit" ]]; then
               continue
             fi
             echo "::debug::Commit: $commit"
             if [[ $(git rev-parse --verify "$commit" 2>/dev/null) ]]; then
               commit=${commit:0:7}
-              picked_commits+=($commit)
+              picked_commits+=("$commit")
             fi
           done
+          IFS=$old_IFS
 
           if [ -z "$picked_commits" ]; then
             echo '::notice::No cherry-picked commits in "${{ env.FEATURE_TEST_BRANCH }}" found.'
@@ -197,7 +201,7 @@ jobs:
           fi
 
           echo "Cherry-picked commits:"
-          for commit in "${picked_commits[@]}"; do
+          for commit in $picked_commits; do
             commit_message=$(git log --format=%s -n 1 $commit)
             echo "$(git log --pretty=format:"- %s (%H)" -n 1 $commit)"
             echo "::debug::$commit"
