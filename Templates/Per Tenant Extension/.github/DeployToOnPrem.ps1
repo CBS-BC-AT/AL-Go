@@ -10,11 +10,12 @@ Param(
         "Projects"             = "."; # Projects to deploy to this environment
         "ContinuousDeployment" = $false; # Is this environment setup for continuous deployment?
         "runs-on"              = "windows-latest"; # GitHub runner to be used to run the deployment script
+        "SyncMode"             = "Add"; # Sync mode for the deployment
     }
 )
 
 function New-TemporaryFolder {
-    $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) ([GUID]::NewGuid().ToString())
+    $tempPath = Join-Path -Path $PWD -ChildPath "_temp"
     New-Item -ItemType Directory -Path $tempPath | Out-Null
 
     return $tempPath
@@ -46,12 +47,14 @@ function Get-AppList {
 function Get-PublishScript {
     param (
         [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.5/powershell/Update-NAVApp.ps1",
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$outputPath
     )
-    Write-Host "`nDownloading the deployment script"
+    Write-Host "`nDownloading the deployment script..."
     Write-Host "URL: $url"
-    Test-Path -Path $outputPath
+    if (-not (Test-Path -Path $outputPath)) {
+        throw "Output path '$outputPath' does not exist."
+    }
     $filename = [System.IO.Path]::GetFileName($url)
     $deployScriptPath = Join-Path -Path $outputPath -ChildPath $filename
     Invoke-WebRequest -Uri $url -OutFile $deployScriptPath
@@ -62,17 +65,39 @@ function Get-PublishScript {
 
 function Deploy-App {
     param (
+        [Parameter(Mandatory=$true)]
         [string]$srvInst,
-        [System.IO.FileInfo]$app
+        [Parameter(Mandatory=$true)]
+        [System.IO.FileInfo]$app,
+        [Parameter(Mandatory=$true)]
+        [string]$deployScriptPath,
+        [string]$bcVersion,
+        [string]$modulePath,
+        [bool]$forceSync
     )
-    $appPath = $app.FullName
+
     Write-Host "`nDeploying app '$($app.Name)'"
-    Write-Host "::debug::ScriptPath: $deployScriptPath"
-    Write-Host "::debug::srvInst: $srvInst"
-    Write-Host "::debug::app: $appPath"
+    $params = @{
+        "srvInst" = $srvInst;
+        "appPath" = $app.FullName;
+        "forceSync" = $forceSync;
+    }
+    if ($bcVersion) {
+        $params["bcVersion"] = $bcVersion
+    }
+    if ($modulePath) {
+        $params["modulePath"] = $modulePath
+    }
+
+    $commandString = $deployScriptPath
+    foreach ($key in $params.Keys) {
+        Write-Host "::debug::${key}: $($params[$key])"
+        $commandString += " -${key} '$($params[$key])'"
+    }
 
     # Deploy the app using the downloaded script
-    Invoke-Expression -Command "& '$deployScriptPath' -srvInst '$srvInst' -appPath '$appPath'"
+    Write-Host "$commandString"
+    Invoke-Expression -Command $commandString
 }
 
 function Remove-TempFiles {
@@ -90,8 +115,13 @@ Copy-AppFilesToFolder -appFiles $parameters.apps -folder $tempPath | Out-Null
 $appsList = Get-AppList -outputPath $tempPath
 $deployScriptPath = Get-PublishScript -outputPath $tempPath
 
+$authcontext = $parameters.AuthContext | ConvertFrom-Json
+$bcVersion = $authcontext.BCVersion
+$modulePath = $authcontext.ModulePath
+$forceSync = $parameters.SyncMode -eq "ForceSync"
+
 foreach ($app in $appsList) {
-    Deploy-App -srvInst $parameters.EnvironmentName -app $app
+    Deploy-App -srvInst $parameters.EnvironmentName -app $app -deployScriptPath $deployScriptPath -bcVersion $bcVersion -modulePath $modulePath -forceSync $forceSync
 }
 
 Write-Host "`nSuccessfully deployed all apps to $($parameters.EnvironmentName)"
