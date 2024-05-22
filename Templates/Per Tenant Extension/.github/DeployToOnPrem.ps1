@@ -1,16 +1,16 @@
 Param(
     [Hashtable]$parameters = @{
-        "type"                 = "CD"; # Type of delivery (CD or Release)
-        "apps"                 = $null; # Path to folder containing apps to deploy
-        "EnvironmentType"      = "SaaS"; # Environment type
-        "EnvironmentName"      = $null; # Environment name
-        "Branches"             = $null; # Branches which should deploy to this environment (from settings)
-        "AuthContext"          = '{}'; # AuthContext in a compressed Json structure
-        "BranchesFromPolicy"   = $null; # Branches which should deploy to this environment (from GitHub environments)
-        "Projects"             = "."; # Projects to deploy to this environment
-        "ContinuousDeployment" = $false; # Is this environment setup for continuous deployment?
-        "runs-on"              = "windows-latest"; # GitHub runner to be used to run the deployment script
-        "SyncMode"             = "Add"; # Sync mode for the deployment
+        [string] "type"               = "CD"; # Type of delivery (CD or Release)
+        "apps"                        = $null; # Path to folder containing apps to deploy
+        [string] "EnvironmentType"    = "SaaS"; # Environment type
+        "EnvironmentName"             = $null; # Environment name
+        "Branches"                    = $null; # Branches which should deploy to this environment (from settings)
+        [string] "AuthContext"        = '{}'; # AuthContext in a compressed Json structure
+        "BranchesFromPolicy"          = $null; # Branches which should deploy to this environment (from GitHub environments)
+        "Projects"                    = "."; # Projects to deploy to this environment
+        [bool] "ContinuousDeployment" = $false; # Is this environment setup for continuous deployment?
+        [string] "runs-on"            = "windows-latest"; # GitHub runner to be used to run the deployment script
+        [string] "SyncMode"           = "Add"; # Sync mode for the deployment. (Add or ForceSync)
     }
 )
 
@@ -65,11 +65,11 @@ function Get-PublishScript {
 
 function Deploy-App {
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$srvInst,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [System.IO.FileInfo]$app,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$deployScriptPath,
         [string]$bcVersion,
         [string]$modulePath,
@@ -78,8 +78,8 @@ function Deploy-App {
 
     Write-Host "`nDeploying app '$($app.Name)'"
     $params = @{
-        "srvInst" = $srvInst;
-        "appPath" = $app.FullName;
+        "srvInst"   = $srvInst;
+        "appPath"   = $app.FullName;
         "forceSync" = $forceSync;
     }
     if ($bcVersion) {
@@ -120,8 +120,17 @@ $bcVersion = $authcontext.BCVersion
 $modulePath = $authcontext.ModulePath
 $forceSync = $parameters.SyncMode -eq "ForceSync"
 
+$deployAppParams = @{
+    srvInst = $parameters.EnvironmentName
+    deployScriptPath = $deployScriptPath
+    bcVersion = $bcVersion
+    modulePath = $modulePath
+    forceSync = $forceSync
+}
+
 foreach ($app in $appsList) {
-    Deploy-App -srvInst $parameters.EnvironmentName -app $app -deployScriptPath $deployScriptPath -bcVersion $bcVersion -modulePath $modulePath -forceSync $forceSync
+    $deployAppParams["app"] = $app
+    Deploy-App @deployAppParams
 }
 
 Write-Host "`nSuccessfully deployed all apps to $($parameters.EnvironmentName)"
