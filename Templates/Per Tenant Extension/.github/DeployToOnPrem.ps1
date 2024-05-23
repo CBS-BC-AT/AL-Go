@@ -34,11 +34,11 @@ function Get-AppList {
     if ($appsList.Count -gt 1) {
         $appsList = Sort-AppFilesByDependencies -appFiles $appsList
         $appsList = $appsList | ForEach-Object { [System.IO.FileInfo]$_ }
-        Write-Host "Publishing a total of $($appsList.Count) app(s):"
+        Write-Host "Publishing a total of ${appsList.Count} app(s):"
         $appsList | ForEach-Object { Write-Host "- $($_.Name)" }
     }
     else {
-        Write-Host "Publishing $($appsList[0].Name)"
+        Write-Host "Publishing ${appsList[0].Name}."
     }
 
     return $appsList
@@ -114,11 +114,17 @@ $tempPath = New-TemporaryFolder
 Copy-AppFilesToFolder -appFiles $parameters.apps -folder $tempPath | Out-Null
 $appsList = Get-AppList -outputPath $tempPath
 $deployScriptPath = Get-PublishScript -outputPath $tempPath
+$forceSync = $parameters.SyncMode -eq "ForceSync"
 
 $authcontext = $parameters.AuthContext | ConvertFrom-Json
-$bcVersion = $authcontext.BCVersion
-$modulePath = $authcontext.ModulePath
-$forceSync = $parameters.SyncMode -eq "ForceSync"
+$bcVersion = $null
+if ($authcontext.BCVersion) {
+    $bcVersion = $authcontext.BCVersion
+}
+$modulePath = $null
+if ($authcontext.ModulePath) {
+    $modulePath = $authcontext.ModulePath
+}
 
 $deployAppParams = @{
     srvInst = $parameters.EnvironmentName
@@ -133,5 +139,5 @@ foreach ($app in $appsList) {
     Deploy-App @deployAppParams
 }
 
-Write-Host "`nSuccessfully deployed all apps to $($parameters.EnvironmentName)"
+Write-Host "`nSuccessfully deployed all apps to ${parameters.EnvironmentName}."
 Remove-TempFiles -tempPath $tempPath
