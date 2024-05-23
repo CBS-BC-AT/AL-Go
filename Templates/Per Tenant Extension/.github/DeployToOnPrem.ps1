@@ -38,7 +38,7 @@ function Get-AppList {
         $appsList | ForEach-Object { Write-Host "- $($_.Name)" }
     }
     else {
-        Write-Host "Publishing ${appsList[0].Name}."
+        Write-Host "Publishing $($appsList[0].Name)."
     }
 
     return $appsList
@@ -117,21 +117,18 @@ $deployScriptPath = Get-PublishScript -outputPath $tempPath
 $forceSync = $parameters.SyncMode -eq "ForceSync"
 
 $authcontext = $parameters.AuthContext | ConvertFrom-Json
-$bcVersion = $null
-if ($authcontext.BCVersion) {
-    $bcVersion = $authcontext.BCVersion
-}
-$modulePath = $null
-if ($authcontext.ModulePath) {
-    $modulePath = $authcontext.ModulePath
-}
+
+try { $bcVersion = $authcontext.BCVersion }
+catch { $bcVersion = $null }
+try { $modulePath = $authcontext.ModulePath }
+catch { $modulePath = $null }
 
 $deployAppParams = @{
-    srvInst = $parameters.EnvironmentName
+    srvInst          = $parameters.EnvironmentName
     deployScriptPath = $deployScriptPath
-    bcVersion = $bcVersion
-    modulePath = $modulePath
-    forceSync = $forceSync
+    bcVersion        = $bcVersion
+    modulePath       = $modulePath
+    forceSync        = $forceSync
 }
 
 foreach ($app in $appsList) {
