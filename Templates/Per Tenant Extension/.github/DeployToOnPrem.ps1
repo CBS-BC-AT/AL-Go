@@ -46,7 +46,7 @@ function Get-AppList {
 
 function Get-PublishScript {
     param (
-        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.6/powershell/Update-NAVApp.ps1",
+        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.8/powershell/Update-NAVApp.ps1",
         [Parameter(Mandatory = $true)]
         [string]$outputPath
     )
@@ -80,7 +80,9 @@ function Deploy-App {
     $params = @{
         "srvInst"   = $srvInst;
         "appPath"   = $app.FullName;
-        "forceSync" = $forceSync;
+    }
+    if ($forceSync) {
+        $params["forceSync"] = $true
     }
     if ($bcVersion) {
         $params["bcVersion"] = $bcVersion
