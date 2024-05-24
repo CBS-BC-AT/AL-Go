@@ -34,7 +34,7 @@ function Get-AppList {
     if ($appsList.Count -gt 1) {
         $appsList = Sort-AppFilesByDependencies -appFiles $appsList
         $appsList = $appsList | ForEach-Object { [System.IO.FileInfo]$_ }
-        Write-Host "Publishing a total of ${appsList.Count} app(s):"
+        Write-Host "Publishing a total of $($appsList.Count) app(s):"
         $appsList | ForEach-Object { Write-Host "- $($_.Name)" }
     }
     else {
@@ -138,5 +138,5 @@ foreach ($app in $appsList) {
     Deploy-App @deployAppParams
 }
 
-Write-Host "`nSuccessfully deployed all apps to ${parameters.EnvironmentName}."
+Write-Host "`nSuccessfully deployed all apps to $($parameters.EnvironmentName)."
 Remove-TempFiles -tempPath $tempPath
