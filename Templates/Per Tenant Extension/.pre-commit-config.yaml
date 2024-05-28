@@ -12,6 +12,7 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
       - id: end-of-file-fixer
+        files: ^.+\.(ps1|py|md|txt)$
       - id: trailing-whitespace
       - id: mixed-line-ending
       - id: sort-simple-yaml
