@@ -35,7 +35,7 @@ jobs:
             - name: Get list of files changed
               id: get-changed-files
               run: |
-                changed_files=$(git diff --name-only origin/${{ github.base_ref }} | tr '\n' ' ')
+                changed_files=$(git diff --name-only origin/${{ github.base_ref }} | awk '{print "\"" $0 "\""}' | tr '\n' ' ')
                 echo "::debug::Changed files: $changed_files"
                 echo "files=$changed_files" >> $GITHUB_OUTPUT
 
