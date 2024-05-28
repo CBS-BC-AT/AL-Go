@@ -74,65 +74,26 @@
       "-CCC"
     ],
     "gitlens.advanced.fileHistoryFollowsRenames": true,
-    "gitlens.blame.ignoreWhitespace": true,
-    "json.schemas": [
-      {
-        "fileMatch": [
-          "/.github/AL-Go-Settings.json"
-        ],
-        "url": "https://raw.githubusercontent.com/microsoft/AL-Go/v5.0/Schema/algoreposettingssyntax.json"
-      },
-      {
-        "fileMatch": [
-          "/.AL-Go/settings.json"
-        ],
-        "url": "https://raw.githubusercontent.com/microsoft/AL-Go/v5.0/Schema/algosettingssyntax.json"
-      }
-    ]
+    "gitlens.blame.ignoreWhitespace": true
   },
   "tasks": {
+    "version": "2.0.0",
     "tasks": [
       {
-        "command": "./ConfirmLaunch.sh",
+        "command": "../.AL-Go/ConfirmLaunch.ps1",
         "detail": "Asks the user to confirm before launching the project. Useful when deploying to a production environment.",
         "group": "build",
         "label": "Confirm Launch",
-        "options": {
-          "cwd": "${workspaceFolder}/../.AL-GO"
-        },
+        "type": "shell",
         "presentation": {
           "clear": true,
           "close": true,
-          "focus": true,
-          "panel": "shared",
-          "reveal": "always",
+          "echo": false,
+          "reveal": "never",
           "revealProblems": "never",
           "showReuseMessage": false
-        },
-        "type": "shell",
-        "windows": {
-          "presentation": {
-            "clear": true,
-            "close": true,
-            "echo": false,
-            "reveal": "never",
-            "revealProblems": "never",
-            "showReuseMessage": false
-          },
-          "command": ".\\ConfirmLaunch.ps1",
-          "problemMatcher": {
-            "base": "$msCompile",
-            "fileLocation": "absolute",
-            "pattern": {
-              "file": 1,
-              "location": 2,
-              "message": 3,
-              "regexp": "^([^\\\\s].*)\\\\((\\\\d+,\\\\d+)\\\\):\\\\s*(.*)$"
-            }
-          }
         }
       }
-    ],
-    "version": "2.0.0"
+    ]
   }
 }
