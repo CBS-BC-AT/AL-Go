@@ -91,7 +91,7 @@ jobs:
       - name: Setup GH_TOKEN
         if: ${{ env.SKIP_ALL == 'false' && env.USE_GITHUB_TOKEN == 'false' }}
         run: |
-          token="${{ secrets.GHTOKENWORKFLOW }}"
+          token='${{ secrets.GHTOKENWORKFLOW }}'
           if [ -z "$token" ]; then
             echo "SKIP_ALL=true" >> $GITHUB_ENV
             echo "::error::The GHTOKENWORKFLOW secret is required."
@@ -102,12 +102,12 @@ jobs:
       - name: Check PR settings
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          if [ "${{ steps.pull_request.outputs.HEAD_REF }}" == "${{ env.TEST_BRANCH }}" ]; then
+          if [ '${{ steps.pull_request.outputs.HEAD_REF }}' == '${{ env.TEST_BRANCH }}' ]; then
             echo "::error::You cannot update the test branch \`${{ env.TEST_BRANCH }}\` with itself."
             echo "SKIP_ALL=true" >> $GITHUB_ENV
             exit 1
           fi
-          if [ "${{ steps.pull_request.outputs.BASE_REF }}" == ${{ env.TEST_BRANCH }} ]; then
+          if [ '${{ steps.pull_request.outputs.BASE_REF }}' == ${{ env.TEST_BRANCH }} ]; then
             echo "::error::The pull request ${{ github.event.issue.pull_request.html_url }} is already targeting the test branch \`${{ env.TEST_BRANCH }}\`."
             echo "SKIP_ALL=true" >> $GITHUB_ENV
             exit 1
@@ -116,7 +116,7 @@ jobs:
       - name: Check if ${{ env.TEST_BRANCH }} exists
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          test_branch="${{ env.TEST_BRANCH }}"
+          test_branch='${{ env.TEST_BRANCH }}'
           if ! git ls-remote --heads origin | grep -q "refs/heads/$test_branch$"; then
             echo "::error::Branch $test_branch does not exist. Please create the branch or define a custom name by editing the repository variable 'UPDATETESTBRANCH_TEST_BRANCH' and try again."
             echo "SKIP_ALL=true" >> $GITHUB_ENV
@@ -127,8 +127,8 @@ jobs:
         id: get_feature_commits
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          base_ref="${{ steps.pull_request.outputs.BASE_REF }}"
-          head_ref="${{ steps.pull_request.outputs.HEAD_REF }}"
+          base_ref='${{ steps.pull_request.outputs.BASE_REF }}'
+          head_ref='${{ steps.pull_request.outputs.HEAD_REF }}'
           git fetch origin $base_ref
           git fetch origin $head_ref
 
@@ -157,7 +157,7 @@ jobs:
         id: check_feat_test
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
           if git ls-remote --heads origin | grep -q "refs/heads/$feature_test_branch$"; then
             echo "Branch $feature_test_branch found."
             echo "SKIP_CHERRY_LIST=false" >> $GITHUB_OUTPUT
@@ -170,43 +170,40 @@ jobs:
         id: get_cherry_picked_commits
         if: ${{ env.SKIP_ALL == 'false' && steps.check_feat_test.outputs.SKIP_CHERRY_LIST == 'false' }}
         run: |
-          test_branch="${{ env.TEST_BRANCH }}"
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
+          test_branch='${{ env.TEST_BRANCH }}'
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
           git fetch origin $test_branch
           git fetch origin $feature_test_branch
 
           commit_separator=$'\001'
+          commit_separator_esc='\\001'
           feature_test_bodies=$(git log --reverse --pretty=format:"%B$commit_separator" origin/$test_branch..origin/$feature_test_branch)
 
           if [ -z "$feature_test_bodies" ]; then
             echo "::notice::No new commits in \"$feature_test_branch\" found."
           fi
 
+          feature_test_bodies=${feature_test_bodies%$commit_separator}
+          feature_test_bodies=$(printf "%q" "$feature_test_bodies" | sed "s/$commit_separator_esc/$commit_separator/g")
+
           picked_commits=()
           IFS=$commit_separator
           for msg in $feature_test_bodies; do
-            msg=${msg%$'\n'}
-            echo "::debug::Full message: $msg"
-            last_line=$(echo "$msg" | tail -n 1)
-            echo "::debug::Last line: $last_line"
-            commit=$(echo "$last_line" | grep -oP '(?<=\(cherry picked from commit )\S*(?=\))')
+            echo "::debug::Full message:"
+            echo "::debug::$msg"
+            commit=$(echo -n "$msg" | grep -oP '(?<=\(cherry picked from commit )\S*(?=\))' | tail -n 1)
             if [[ -z "$commit" ]]; then
               continue
             fi
-            echo "::debug::Commit: $commit"
             if [[ $(git rev-parse --verify "$commit" 2>/dev/null) ]]; then
               commit=${commit:0:7}
               picked_commits+=("$commit")
+              echo "::debug::Commit $commit found."
             else
               echo "::debug::Commit $commit not found in the repository."
             fi
           done
           unset IFS
-
-          if [ -z "$picked_commits" ]; then
-            echo "::notice::No cherry-picked commits in \"$feature_test_branch\" found."
-            exit 0
-          fi
 
           echo "Cherry-picked commits:"
           for commit in $picked_commits; do
@@ -304,8 +301,8 @@ jobs:
       - name: Create/Checkout ${{ env.FEATURE_TEST_BRANCH }}
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
-          test_branch="${{ env.TEST_BRANCH }}"
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
+          test_branch='${{ env.TEST_BRANCH }}'
           git fetch origin $test_branch
 
           if git ls-remote --heads origin | grep -q "refs/heads/$feature_test_branch$"; then
@@ -366,8 +363,8 @@ jobs:
       - name: "On success: Commit & push cherry-picked changes"
         if: ${{ env.SKIP_ALL == 'false' && steps.cherry_pick.outcome == 'success' }}
         run: |
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
-          compare_branch="${{ env.TEST_BRANCH }}"
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
+          compare_branch='${{ env.TEST_BRANCH }}'
           push=false
           if [ -n "$(git status --porcelain)" ]; then
             git commit
@@ -415,12 +412,13 @@ jobs:
       - name: "On failure: Abort cherry-pick & push changes"
         if: ${{ env.SKIP_ALL == 'false' && steps.cherry_pick.outcome == 'failure' }}
         run: |
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
           git reset --hard
           if [ -z "$(git log origin/$feature_test_branch..$feature_test_branch)" ]; then
             echo "Pushing empty commit to $feature_test_branch to create PR."
             git commit --allow-empty -m 'Cherry-pick of `${{ steps.pull_request.outputs.HEAD_REF }}` failed.
-            Manual resolution required.'
+
+          Manual resolution required.'
           fi
           git push origin $feature_test_branch
 
@@ -428,8 +426,8 @@ jobs:
         id: check_existing_pr
         if: ${{ env.SKIP_ALL == 'false' }}
         run: |
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
-          test_branch="${{ env.TEST_BRANCH }}"
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
+          test_branch='${{ env.TEST_BRANCH }}'
           if [ $(gh pr list --base $test_branch --head $feature_test_branch --state open | wc -l) -gt 0 ]; then
             echo "PR already exists."
             echo "NO_CHANGES=false" >> $GITHUB_ENV
@@ -442,7 +440,7 @@ jobs:
       - name: Ensure bot label exists
         if: ${{ env.SKIP_ALL == 'false' &&  env.NO_CHANGES == 'false' }}
         run: |
-          bot_label="${{ env.BOT_LABEL }}"
+          bot_label='${{ env.BOT_LABEL }}'
           if [ -z "$(gh label list --search "$bot_label" --limit 1)" ]; then
             gh label create $bot_label --color CCCCCC --description "Automated pull requests"
             echo "::notice::Label $bot_label added to repository."
@@ -474,8 +472,8 @@ jobs:
       - name: Set pull request status
         if: ${{ env.SKIP_ALL == 'false' &&  env.NO_CHANGES == 'false' }}
         run: |
-          feature_test_branch="${{ env.FEATURE_TEST_BRANCH }}"
-          if [ "${{ steps.cherry_pick.outcome }}" == "success" ]; then
+          feature_test_branch='${{ env.FEATURE_TEST_BRANCH }}'
+          if [ '${{ steps.cherry_pick.outcome }}' == "success" ]; then
             gh pr ready $feature_test_branch
           else
             gh pr ready --undo $feature_test_branch
@@ -546,7 +544,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ steps.cherry_pick.outcome }}" == "success" ]; then
+          if [ '${{ steps.cherry_pick.outcome }}' == "success" ]; then
             body='The cherry-picked changes from `${{ steps.pull_request.outputs.HEAD_REF }}` are ready to be added to the `${{ env.TEST_BRANCH }}` branch.
 
             A new pull request has been created to test the changes. See ${{ env.TEST_PR_URL }} for more details.'
