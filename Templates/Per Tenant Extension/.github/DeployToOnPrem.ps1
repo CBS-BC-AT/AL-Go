@@ -46,7 +46,7 @@ function Get-AppList {
 
 function Get-PublishScript {
     param (
-        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.9/powershell/Update-NAVApp.ps1",
+        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.10/powershell/Update-NAVApp.ps1",
         [Parameter(Mandatory = $true)]
         [string]$outputPath
     )
