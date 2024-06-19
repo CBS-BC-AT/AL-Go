@@ -11,6 +11,11 @@ Param(
         [bool] "ContinuousDeployment" = $false; # Is this environment setup for continuous deployment?
         [string] "runs-on"            = "windows-latest"; # GitHub runner to be used to run the deployment script
         [string] "SyncMode"           = "Add"; # Sync mode for the deployment. (Add or ForceSync)
+        [string] "bcVersion"          = ""; # Version string of the Business Central server to deploy to.
+        [string] "modulePath"         = ""; # Path to the module to deploy the app to. Used to circumvent "Import-NAVModules" in the deployment script.
+        [string] "folderVersion"      = ""; # Name of the folder leading to the system files of the Business Central server. If given without modulePath, modulePath will be set to "C:\Program Files\Microsoft Dynamics 365 Business Central\$folderVersion\Service\NavAdminTool.ps1".
+        [string] "dplScriptVersion"   = "v0.2.12"; # Version of the deployment script to download.
+        [string] "dplScriptUrl"       = ""; # URL to the deployment script to download.
     }
 )
 
@@ -46,21 +51,23 @@ function Get-AppList {
 
 function Get-PublishScript {
     param (
-        [string]$url = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/v0.2.11/powershell/Update-NAVApp.ps1",
+        [Parameter(Mandatory = $true)]
+        [string]$dplScriptVersion,
+        [string]$dplScriptUrl = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/$dplScriptVersion/powershell/Update-NAVApp.ps1",
         [Parameter(Mandatory = $true)]
         [string]$outputPath
     )
     Write-Host "`nDownloading the deployment script..."
-    Write-Host "URL: $url"
+    Write-Host "URL: $dplScriptUrl"
     if (-not (Test-Path -Path $outputPath)) {
         throw "Output path '$outputPath' does not exist."
     }
-    $filename = [System.IO.Path]::GetFileName($url)
-    $deployScriptPath = Join-Path -Path $outputPath -ChildPath $filename
-    Invoke-WebRequest -Uri $url -OutFile $deployScriptPath
-    Write-Host "Downloaded the deployment script to $deployScriptPath"
+    $filename = [System.IO.Path]::GetFileName($dplScriptUrl)
+    $dplScriptPath = Join-Path -Path $outputPath -ChildPath $filename
+    Invoke-WebRequest -Uri $dplScriptUrl -OutFile $dplScriptPath
+    Write-Host "Downloaded the deployment script to $dplScriptPath"
 
-    return $deployScriptPath
+    return $dplScriptPath
 }
 
 function Deploy-App {
@@ -70,28 +77,32 @@ function Deploy-App {
         [Parameter(Mandatory = $true)]
         [System.IO.FileInfo]$app,
         [Parameter(Mandatory = $true)]
-        [string]$deployScriptPath,
+        [string]$dplScriptPath,
         [string]$bcVersion,
         [string]$modulePath,
+        [string]$folderVersion,
         [bool]$forceSync
     )
 
     Write-Host "`nDeploying app '$($app.Name)'"
     $params = @{
-        "srvInst"   = $srvInst;
-        "appPath"   = $app.FullName;
+        "appPath" = $app.FullName;
     }
-    if ($forceSync) {
-        $params["forceSync"] = $true
-    }
-    if ($bcVersion) {
-        $params["bcVersion"] = $bcVersion
-    }
-    if ($modulePath) {
-        $params["modulePath"] = $modulePath
+    $paramNames = @(
+        "srvInst",
+        "forceSync",
+        "bcVersion",
+        "modulePath",
+        "folderVersion"
+    )
+
+    foreach ($paramName in $paramNames) {
+        if (Get-Variable -Name $paramName -ErrorAction SilentlyContinue) {
+            $params[$paramName] = Get-Variable -Name $paramName -ValueOnly
+        }
     }
 
-    $commandString = $deployScriptPath
+    $commandString = $dplScriptPath
     foreach ($key in $params.Keys) {
         Write-Host "::debug::${key}: $($params[$key])"
         $commandString += " -${key} '$($params[$key])'"
@@ -115,21 +126,15 @@ $parameters | ConvertTo-Json -Depth 99 | Out-Host
 $tempPath = New-TemporaryFolder
 Copy-AppFilesToFolder -appFiles $parameters.apps -folder $tempPath | Out-Null
 $appsList = Get-AppList -outputPath $tempPath
-$deployScriptPath = Get-PublishScript -outputPath $tempPath
+$deployScriptPath = Get-PublishScript -outputPath $tempPath -dplScriptVersion $dplScriptVersion -dplScriptUrl $dplScriptUrl
 $forceSync = $parameters.SyncMode -eq "ForceSync"
-
-$authcontext = $parameters.AuthContext | ConvertFrom-Json
-
-try { $bcVersion = $authcontext.BCVersion }
-catch { $bcVersion = $null }
-try { $modulePath = $authcontext.ModulePath }
-catch { $modulePath = $null }
 
 $deployAppParams = @{
     srvInst          = $parameters.EnvironmentName
     deployScriptPath = $deployScriptPath
     bcVersion        = $bcVersion
     modulePath       = $modulePath
+    folderVersion    = $folderVersion
     forceSync        = $forceSync
 }
 
