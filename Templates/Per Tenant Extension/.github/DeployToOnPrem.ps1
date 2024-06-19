@@ -53,11 +53,14 @@ function Get-PublishScript {
     param (
         [Parameter(Mandatory = $true)]
         [string]$dplScriptVersion,
-        [string]$dplScriptUrl = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/$dplScriptVersion/powershell/Update-NAVApp.ps1",
+        [string]$dplScriptUrl,
         [Parameter(Mandatory = $true)]
         [string]$outputPath
     )
     Write-Host "`nDownloading the deployment script..."
+    if (-not $dplScriptUrl) {
+        $dplScriptUrl = "https://raw.githubusercontent.com/CBS-BC-AT-Internal/INT.utilities/$dplScriptVersion/powershell/Update-NAVApp.ps1"
+    }
     Write-Host "URL: $dplScriptUrl"
     if (-not (Test-Path -Path $outputPath)) {
         throw "Output path '$outputPath' does not exist."
