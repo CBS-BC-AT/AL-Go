@@ -158,10 +158,8 @@ else {
             $deployTo = $settings."$settingsName"
             $keys = @($deploymentSettings.Keys)
             foreach($key in $keys) {
-                if ($deployTo.ContainsKey($key)) {
-                    Write-Host "Property $key = $($deployTo."$key")"
-                    $deploymentSettings."$key" = $deployTo."$key"
-                }
+                Write-Host "Property $key = $($deployTo."$key")"
+                $deploymentSettings."$key" = $deployTo."$key"
             }
             if ($deploymentSettings."shell" -ne 'pwsh' -and $deploymentSettings."shell" -ne 'powershell') {
                 throw "The shell setting in $settingsName must be either 'pwsh' or 'powershell'"
