@@ -156,10 +156,9 @@ else {
             # If a DeployTo<environmentName> setting exists - use values from this (over the defaults)
             Write-Host "Setting $settingsName"
             $deployTo = $settings."$settingsName"
-            $keys = @($deploymentSettings.Keys)
-            foreach($key in $keys) {
-                Write-Host "Property $key = $($deployTo."$key")"
+            foreach($key in $deployTo.Keys) {
                 $deploymentSettings."$key" = $deployTo."$key"
+                Write-Host "Property $key = $($deploymentSettings."$key")"
             }
             if ($deploymentSettings."shell" -ne 'pwsh' -and $deploymentSettings."shell" -ne 'powershell') {
                 throw "The shell setting in $settingsName must be either 'pwsh' or 'powershell'"
