@@ -143,5 +143,5 @@ foreach ($app in $appsList) {
     Deploy-App @deployAppParams
 }
 
-Write-Host "`nSuccessfully deployed all apps to $($EnvironmentName)."
+Write-Host "`nSuccessfully deployed all apps to $EnvironmentName."
 Remove-TempFiles -tempPath $tempPath
