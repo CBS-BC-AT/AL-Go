@@ -532,7 +532,7 @@ jobs:
           git cherry-pick -x '"$failed_commit"'
           ```
           2) Resolve the merge conflicts and push the changes.
-          3) Re-run the workflow by commenting `!update-test-branch` in ${{ github.event.issue.pull_request.html_url }} again.'
+          3) Re-run the workflow by commenting `!update-test` in ${{ github.event.issue.pull_request.html_url }} again.'
 
           COMMENT_URL=$(gh pr comment ${{ env.TEST_PR_URL }} --body '${{ env.NOTICE_COMMENT_TAG }}
           '"$body")
