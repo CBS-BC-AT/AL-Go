@@ -91,7 +91,6 @@ function Deploy-App {
     }
     $paramNames = @(
         "srvInst",
-        "forceSync",
         "bcVersion",
         "modulePath",
         "folderVersion"
@@ -103,10 +102,27 @@ function Deploy-App {
         }
     }
 
+    $switchParams = @{}
+    $switchParamNames = @(
+        "forceSync"
+    )
+
+    foreach($switchParamName in $switchParamNames) {
+        if (Get-Variable -Name $switchParamName -ErrorAction SilentlyContinue) {
+            $switchParams[$switchParamName] = Get-Variable -Name $switchParamName -ValueOnly
+        }
+    }
+
     $commandString = $dplScriptPath
     foreach ($key in $params.Keys) {
         Write-Host "::debug::${key}: $($params[$key])"
         $commandString += " -${key} '$($params[$key])'"
+    }
+    foreach ($key in $switchParams.Keys) {
+        if($switchParams[$key]){
+            Write-Host "::debug::${key}: true"
+            $commandString += " -${key}"
+        }
     }
 
     # Deploy the app using the downloaded script
