@@ -71,12 +71,7 @@ if (Test-Path $customScript) {
         "AuthContext" = $authContext
         "Apps" = $apps
     } + $deploymentSettings
-    $formatParameters = @{}
-    $parameters.Keys | ForEach-Object {
-        $key = $_ -replace '-','_'
-        $formatParameters += @{ $key = $parameters."$_" }
-    }
-    . $customScript @formatParameters
+    . $customScript -parameters $parameters
 }
 else {
     try {

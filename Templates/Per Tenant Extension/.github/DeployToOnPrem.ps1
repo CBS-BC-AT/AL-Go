@@ -1,21 +1,42 @@
 Param(
-    [string]$type = "CD", # Type of delivery (CD or Release)
-    $apps = $null, # Path to folder containing apps to deploy
-    [string]$EnvironmentType = "SaaS", # Environment type
-    $EnvironmentName = $null, # Environment name
-    $Branches = $null, # Branches which should deploy to this environment (from settings)
-    [string]$AuthContext = '{}', # AuthContext in a compressed Json structure
-    $BranchesFromPolicy = $null, # Branches which should deploy to this environment (from GitHub environments)
-    $Projects = ".", # Projects to deploy to this environment
-    [bool]$ContinuousDeployment = $false, # Is this environment setup for continuous deployment?
-    [string]$runs_on = "windows-latest", # GitHub runner to be used to run the deployment script
-    [string]$SyncMode = "Add", # Sync mode for the deployment. (Add or ForceSync)
-    [string]$bcVersion = "", # Version string of the Business Central server to deploy to.
-    [string]$modulePath = "", # Path to the module to deploy the app to. Used to circumvent "Import-NAVModules" in the deployment script.
-    [string]$folderVersion = "", # Name of the folder leading to the system files of the Business Central server. If given without modulePath, modulePath will be set to "C:\Program Files\Microsoft Dynamics 365 Business Central\$folderVersion\Service\NavAdminTool.ps1".
-    [string]$dplScriptVersion = "v0.2.13", # Version of the deployment script to download.
-    [string]$dplScriptUrl = "" # URL to the deployment script to download.
+    [Hashtable]$parameters = @{}
 )
+
+function Get-DefaultParams() {
+    [Hashtable]$defaultParams = @{
+        [string]$type               = "CD" # Type of delivery (CD or Release)
+        $apps                       = $null # Path to folder containing apps to deploy
+        [string]$EnvironmentType    = "SaaS" # Environment type
+        $EnvironmentName            = $null # Environment name
+        $Branches                   = $null # Branches which should deploy to this environment (from settings)
+        [string]$AuthContext        = '{}' # AuthContext in a compressed Json structure
+        $BranchesFromPolicy         = $null # Branches which should deploy to this environment (from GitHub environments)
+        $Projects                   = "." # Projects to deploy to this environment
+        [bool]$ContinuousDeployment = $false # Is this environment setup for continuous deployment?
+        [string]$runs_on            = "windows-latest" # GitHub runner to be used to run the deployment script
+        [string]$SyncMode           = "Add" # Sync mode for the deployment. (Add or ForceSync)
+        [string]$bcVersion          = "" # Version string of the Business Central server to deploy to.
+        [string]$modulePath         = "" # Path to the module to deploy the app to. Used to circumvent "Import-NAVModules" in the deployment script.
+        [string]$folderVersion      = "" # Name of the folder leading to the system files of the Business Central server. If given without modulePath, modulePath will be set to "C:\Program Files\Microsoft Dynamics 365 Business Central\$folderVersion\Service\NavAdminTool.ps1".
+        [string]$dplScriptVersion   = "v0.2.13" # Version of the deployment script to download.
+        [string]$dplScriptUrl       = "" # URL to the deployment script to download.
+    }
+    return $defaultParams
+}
+
+function InitParameters {
+    param (
+        [hashtable]$parameters
+    )
+    $finalParams = Get-DefaultParams
+    $parameters.GetEnumerator() | ForEach-Object {
+        $finalParams[$_.Key] = $_.Value
+    }
+    $finalParams.Keys | ForEach-Object {
+        Write-Host "$_ = $($finalParams[$_])"
+        New-Variable -Name $_ -Value $finalParams[$_] -Force -Scope Script
+    }
+}
 
 function New-TemporaryFolder {
     $tempPath = Join-Path -Path $PWD -ChildPath "_temp"
@@ -107,7 +128,7 @@ function Deploy-App {
         "forceSync"
     )
 
-    foreach($switchParamName in $switchParamNames) {
+    foreach ($switchParamName in $switchParamNames) {
         if (Get-Variable -Name $switchParamName -ErrorAction SilentlyContinue) {
             $switchParams[$switchParamName] = Get-Variable -Name $switchParamName -ValueOnly
         }
@@ -119,7 +140,7 @@ function Deploy-App {
         $commandString += " -${key} '$($params[$key])'"
     }
     foreach ($key in $switchParams.Keys) {
-        if($switchParams[$key]){
+        if ($switchParams[$key]) {
             Write-Host "::debug::${key}: true"
             $commandString += " -${key}"
         }
@@ -139,6 +160,7 @@ function Remove-TempFiles {
 }
 
 $ErrorActionPreference = "Stop"
+InitParameters -parameters $parameters
 $tempPath = New-TemporaryFolder
 Copy-AppFilesToFolder -appFiles $apps -folder $tempPath | Out-Null
 $appsList = Get-AppList -outputPath $tempPath
