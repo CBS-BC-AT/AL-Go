@@ -105,6 +105,7 @@ if (!($environments)) {
                 "BranchesFromPolicy" = @()
                 "Projects" = '*'
                 "SyncMode" = $null
+                "Scope" = $null
                 "continuousDeployment" = !($getEnvironments -like '* (PROD)' -or $getEnvironments -like '* (Production)' -or $getEnvironments -like '* (FAT)' -or $getEnvironments -like '* (Final Acceptance Test)')
                 "runs-on" = @($settings."runs-on".Split(',').Trim())
                 "shell" = $settings."shell"
@@ -143,6 +144,7 @@ else {
             "BranchesFromPolicy" = @()
             "Projects" = '*'
             "SyncMode" = $null
+            "Scope" = $null
             "continuousDeployment" = $null
             "runs-on" = @($settings."runs-on".Split(',').Trim())
             "shell" = $settings."shell"
