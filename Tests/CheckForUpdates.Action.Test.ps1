@@ -8,6 +8,7 @@ Describe "CheckForUpdates Action Tests" {
         $scriptRoot = Join-Path $PSScriptRoot "..\Actions\$actionName" -Resolve
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'actionScript', Justification = 'False positive.')]
         $actionScript = GetActionScript -scriptRoot $scriptRoot -scriptName "$actionName.ps1"
+        $helperScriptPath = Join-Path $scriptRoot "$actionName.HelperFunctions.ps1"
     }
 
     It 'Compile Action' {
@@ -122,6 +123,7 @@ Describe "CheckForUpdates Action Tests" {
     }
 
     It 'Test Custom Template Files' {
+        . $helperScriptPath
         $repoSettings1 = @{
             'templateFiles' = @(
                 'scripts/*.ps1',
@@ -134,13 +136,22 @@ Describe "CheckForUpdates Action Tests" {
             )
         }
         $checkFiles1 = GetCustomTemplateFiles -repoSettings $repoSettings1
-        $checkFiles1.Count | Should -be 6
-        $checkFiles1[0] | Should -be @{ 'dstPath' = 'scripts'; 'srcPath' = 'scripts'; 'pattern' = '*.ps1'; 'type' = 'custom' }
-        $checkFiles1[1] | Should -be @{ 'dstPath' = '.'; 'srcPath' = '.'; 'pattern' = 'pre-commit-config.yaml'; 'type' = 'custom' }
-        $checkFiles1[2] | Should -be @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*'; 'type' = 'custom' }
-        $checkFiles1[3] | Should -be @{ 'dstPath' = 'docs\\*'; 'srcPath' = 'docs\\*'; 'pattern' = '*'; 'type' = 'custom' }
-        $checkFiles1[4] | Should -be @{ 'dstPath' = ''; 'srcPath' = ''; 'pattern' = '*'; 'type' = 'custom' }
-        $checkFiles1[5] | Should -be @{ 'dstPath' = '.vscode'; 'srcPath' = '.vscode'; 'pattern' = '*'; 'type' = 'custom' }
+        $checkFiles1 | Should -HaveCount 6
+
+        function CompareKeysAndValues($actual, $expected) {
+            $expected.GetEnumerator() | ForEach-Object {
+                $key = $_.Key
+                $value = $_.Value
+                $actual[$key] | Should -be $value
+            }
+        }
+
+        CompareKeysAndValues $checkFiles1[0] @{ 'srcPath' = 'scripts'; 'dstPath' = 'scripts'; 'pattern' = '*.ps1'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[1] @{ 'dstPath' = '.'; 'srcPath' = '.'; 'pattern' = 'pre-commit-config.yaml'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[2] @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[3] @{ 'dstPath' = 'docs\*'; 'srcPath' = 'docs\*'; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[4] @{ 'dstPath' = ''; 'srcPath' = ''; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[5] @{ 'dstPath' = '.vscode'; 'srcPath' = '.vscode'; 'pattern' = '*'; 'type' = 'custom' }
 
         $repoSettings2 = @{
         }
