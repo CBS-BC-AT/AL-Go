@@ -102,7 +102,7 @@ $checkfiles = @(
 )
 
 # Add template files from RepoSettings, if any
-$checkFiles += GetCustomTemplateFilesFromSettings -repoSettings $repoSettings
+$checkFiles += GetCustomTemplateFiles -repoSettings $repoSettings
 
 # Get the list of projects in the current repository
 $baseFolder = $ENV:GITHUB_WORKSPACE
