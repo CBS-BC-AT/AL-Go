@@ -3,6 +3,11 @@ name: 'Pull Request Build'
 on:
   pull_request_target:
     branches: [ 'main' ]
+    types:
+      - ready_for_review
+      - opened
+      - synchronize
+      - reopened
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
