@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, "publish-testmaster" ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, "publish-testmaster" ]
+    branches: [ main ]
   workflow_dispatch:
 
 defaults:
