@@ -528,7 +528,7 @@ jobs:
           ```bash
           git fetch origin ${{ env.FEATURE_TEST_BRANCH }}
           git checkout ${{ env.FEATURE_TEST_BRANCH }}
-          git pull origin ${{ env.FEATURE_TEST_BRANCH }}
+          git reset --hard ${{ env.FEATURE_TEST_BRANCH }}
           git cherry-pick -x '"$failed_commit"'
           ```
           2) Resolve the merge conflicts and push the changes.
