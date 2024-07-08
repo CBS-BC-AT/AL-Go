@@ -18,7 +18,7 @@ function Get-DefaultParams() {
         "bcVersion"            = "" # Version string of the Business Central server to deploy to.
         "modulePath"           = "" # Path to the module to deploy the app to. Used to circumvent "Import-NAVModules" in the deployment script.
         "folderVersion"        = "" # Name of the folder leading to the system files of the Business Central server. If given without modulePath, modulePath will be set to "C:\Program Files\Microsoft Dynamics 365 Business Central\$folderVersion\Service\NavAdminTool.ps1".
-        "dplScriptVersion"     = "v0.2.15" # Version of the deployment script to download.
+        "dplScriptVersion"     = "v0.2.16" # Version of the deployment script to download.
         "dplScriptUrl"         = "" # URL to the deployment script to download.
     }
     return $defaultParams
