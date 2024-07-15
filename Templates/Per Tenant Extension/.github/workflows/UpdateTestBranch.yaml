@@ -323,7 +323,7 @@ jobs:
           echo "${feature_commits[*]}"
           successful_commits=()
           success=true
-          no_changes=false
+          no_changes=true
 
           for commit in "${feature_commits[@]}"; do
             git cherry-pick --empty=keep -x $commit 1>/dev/null || true
@@ -333,7 +333,7 @@ jobs:
             fi
             successful_commits+=($commit)
             commit_id=$(git rev-parse HEAD)
-            if git diff --quiet $commit_id^ $commit_id
+            if ! git diff --quiet $commit_id^ $commit_id
             then
               no_changes=false
             fi
