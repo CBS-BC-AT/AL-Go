@@ -7,6 +7,9 @@ on:
       - reopened
       - synchronize
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+
 jobs:
   labeler:
     runs-on: ubuntu-latest
