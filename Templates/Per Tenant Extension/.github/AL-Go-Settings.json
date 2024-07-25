@@ -14,6 +14,10 @@
   "runs-on": "ubuntu-latest",
   "skipUpgrade": true,
   "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@publish-testmaster",
+  "templateFiles": [
+    ".github/DeployTo*.ps1",
+    ".schemas/*"
+  ],
   "type": "PTE",
   "UpdateGitHubGoSystemFilesSchedule": "0 2 * * 1,3,5",
   "useCompilerFolder": true,
