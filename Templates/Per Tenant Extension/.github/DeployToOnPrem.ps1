@@ -20,6 +20,7 @@ function Get-DefaultParams() {
         "folderVersion"        = "" # Name of the folder leading to the system files of the Business Central server. If given without modulePath, modulePath will be set to "C:\Program Files\Microsoft Dynamics 365 Business Central\$folderVersion\Service\NavAdminTool.ps1".
         "dplScriptVersion"     = "v0.2.18" # Version of the deployment script to download.
         "dplScriptUrl"         = "" # URL to the deployment script to download.
+        "dryRun"               = $false # If true, the update script won't write any changes to the environment.
     }
     return $defaultParams
 }
@@ -103,7 +104,8 @@ function Deploy-App {
         [string]$bcVersion,
         [string]$modulePath,
         [string]$folderVersion,
-        [bool]$forceSync
+        [bool]$forceSync,
+        [bool]$dryRun
     )
 
     Write-Host "`nDeploying app '$($app.Name)'"
@@ -125,7 +127,8 @@ function Deploy-App {
 
     $switchParams = @{}
     $switchParamNames = @(
-        "forceSync"
+        "forceSync",
+        "dryRun"
     )
 
     foreach ($switchParamName in $switchParamNames) {
@@ -174,6 +177,7 @@ $deployAppParams = @{
     modulePath    = $modulePath
     folderVersion = $folderVersion
     forceSync     = $forceSync
+    dryRun        = $dryRun
 }
 
 foreach ($app in $appsList) {
