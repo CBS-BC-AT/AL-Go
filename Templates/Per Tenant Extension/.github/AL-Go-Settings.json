@@ -8,7 +8,7 @@
   ],
   "doNotPublishApps": true,
   "enableCodeCop": true,
-  "enablePerTenantExtensionCop": false,
+  "enablePerTenantExtensionCop": true,
   "enableUICop": true,
   "githubRunner": "ubuntu-latest",
   "rulesetFile": "CegekaAT.ruleset.json",
