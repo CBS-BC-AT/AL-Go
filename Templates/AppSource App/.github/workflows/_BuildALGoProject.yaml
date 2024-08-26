@@ -67,14 +67,10 @@ on:
         description: Flag determining whether to use the Artifacts Cache
         type: boolean
         default: false
-      parentTelemetryScopeJson:
-        description: Specifies the telemetry scope for the telemetry signal
-        required: false
-        type: string
 
 permissions:
-  contents: read
   actions: read
+  contents: read
   id-token: write
 
 env:
@@ -117,7 +113,6 @@ jobs:
         id: determineArtifactUrl
         with:
           shell: ${{ inputs.shell }}
-          parentTelemetryScopeJson: ${{ inputs.parentTelemetryScopeJson }}
           project: ${{ inputs.project }}
 
       - name: Cache Business Central Artifacts
@@ -146,7 +141,6 @@ jobs:
           BuildMode: ${{ inputs.buildMode }}
         with:
           shell: ${{ inputs.shell }}
-          parentTelemetryScopeJson: ${{ inputs.parentTelemetryScopeJson }}
           artifact: ${{ env.artifact }}
           project: ${{ inputs.project }}
           buildMode: ${{ inputs.buildMode }}
@@ -161,7 +155,6 @@ jobs:
           shell: ${{ needs.Initialization.outputs.githubRunnerShell }}
           azureCredentialsJson: '${{ fromJson(steps.ReadSecrets.outputs.Secrets).AZURE_CREDENTIALS }}'
           pathToFiles: '${{ inputs.project }}/.buildartifacts/Apps/*.app'
-          parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
 
       - name: Calculate Artifact names
         id: calculateArtifactsNames
@@ -175,7 +168,7 @@ jobs:
 
       - name: Upload thisbuild artifacts - apps
         if: inputs.publishThisBuildArtifacts
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.ThisBuildAppsArtifactsName }}
           path: '${{ inputs.project }}/.buildartifacts/Apps/'
@@ -184,7 +177,7 @@ jobs:
 
       - name: Upload thisbuild artifacts - dependencies
         if: inputs.publishThisBuildArtifacts
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.ThisBuildDependenciesArtifactsName }}
           path: '${{ inputs.project }}/.buildartifacts/Dependencies/'
@@ -193,7 +186,7 @@ jobs:
 
       - name: Upload thisbuild artifacts - test apps
         if: inputs.publishThisBuildArtifacts
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.ThisBuildTestAppsArtifactsName }}
           path: '${{ inputs.project }}/.buildartifacts/TestApps/'
@@ -201,7 +194,7 @@ jobs:
           retention-days: 1
 
       - name: Publish artifacts - apps
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: inputs.publishArtifacts
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.AppsArtifactsName }}
@@ -209,7 +202,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish artifacts - dependencies
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: inputs.publishArtifacts && env.generateDependencyArtifact == 'True'
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.DependenciesArtifactsName }}
@@ -217,7 +210,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish artifacts - test apps
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: inputs.publishArtifacts
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.TestAppsArtifactsName }}
@@ -225,7 +218,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish artifacts - build output
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: (success() || failure()) && (hashFiles(format('{0}/BuildOutput.txt',inputs.project)) != '')
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.BuildOutputArtifactsName }}
@@ -233,7 +226,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish artifacts - container event log
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: (failure()) && (hashFiles(format('{0}/ContainerEventLog.evtx',inputs.project)) != '')
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.ContainerEventLogArtifactsName }}
@@ -241,7 +234,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish artifacts - test results
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: (success() || failure()) && (hashFiles(format('{0}/TestResults.xml',inputs.project)) != '')
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.TestResultsArtifactsName }}
@@ -249,7 +242,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publish artifacts - bcpt test results
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: (success() || failure()) && (hashFiles(format('{0}/bcptTestResults.json',inputs.project)) != '')
         with:
           name: ${{ steps.calculateArtifactsNames.outputs.BcptTestResultsArtifactsName }}
@@ -262,7 +255,6 @@ jobs:
         uses: microsoft/AL-Go-Actions/AnalyzeTests@main
         with:
           shell: ${{ inputs.shell }}
-          parentTelemetryScopeJson: ${{ inputs.parentTelemetryScopeJson }}
           project: ${{ inputs.project }}
 
       - name: Cleanup
@@ -270,5 +262,4 @@ jobs:
         uses: microsoft/AL-Go-Actions/PipelineCleanup@main
         with:
           shell: ${{ inputs.shell }}
-          parentTelemetryScopeJson: ${{ inputs.parentTelemetryScopeJson }}
           project: ${{ inputs.project }}
