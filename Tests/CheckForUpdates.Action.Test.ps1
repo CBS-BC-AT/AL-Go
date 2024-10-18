@@ -1,4 +1,4 @@
-﻿Get-Module TestActionsHelper | Remove-Module -Force
+Get-Module TestActionsHelper | Remove-Module -Force
 Import-Module (Join-Path $PSScriptRoot 'TestActionsHelper.psm1')
 $errorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"; Set-StrictMode -Version 2.0
 
@@ -8,6 +8,7 @@ Describe "CheckForUpdates Action Tests" {
         $scriptRoot = Join-Path $PSScriptRoot "..\Actions\$actionName" -Resolve
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'actionScript', Justification = 'False positive.')]
         $actionScript = GetActionScript -scriptRoot $scriptRoot -scriptName "$actionName.ps1"
+        $helperScriptPath = Join-Path $scriptRoot "$actionName.HelperFunctions.ps1"
     }
 
     It 'Compile Action' {
@@ -119,6 +120,43 @@ Describe "CheckForUpdates Action Tests" {
         $permissionsContent.content.Count | Should -be 2 # Only the first two lines should remain
         $permissionsContent.content[0].Trim() | Should -be 'contents: read'
         $permissionsContent.content[1].Trim() | Should -be 'actions: read'
+    }
+
+    It 'Test Custom Template Files' {
+        . $helperScriptPath
+        $repoSettings1 = @{
+            'templateFiles' = @(
+                'scripts/*.ps1',
+                'pre-commit-config.yaml',
+                '.github',
+                'docs/*/*',
+                '',
+                '*',
+                '.vscode/*'
+            )
+        }
+        $checkFiles1 = GetCustomTemplateFiles -repoSettings $repoSettings1
+        $checkFiles1 | Should -HaveCount 6
+
+        function CompareKeysAndValues($actual, $expected) {
+            $expected.GetEnumerator() | ForEach-Object {
+                $key = $_.Key
+                $value = $_.Value
+                $actual[$key] | Should -be $value
+            }
+        }
+
+        CompareKeysAndValues $checkFiles1[0] @{ 'srcPath' = 'scripts'; 'dstPath' = 'scripts'; 'pattern' = '*.ps1'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[1] @{ 'dstPath' = '.'; 'srcPath' = '.'; 'pattern' = 'pre-commit-config.yaml'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[2] @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[3] @{ 'dstPath' = 'docs\*'; 'srcPath' = 'docs\*'; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[4] @{ 'dstPath' = ''; 'srcPath' = ''; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[5] @{ 'dstPath' = '.vscode'; 'srcPath' = '.vscode'; 'pattern' = '*'; 'type' = 'custom' }
+
+        $repoSettings2 = @{
+        }
+        $checkFiles2 = GetCustomTemplateFiles -repoSettings $repoSettings2
+        $checkFiles2 | Should -be $null
     }
 
     # Call action

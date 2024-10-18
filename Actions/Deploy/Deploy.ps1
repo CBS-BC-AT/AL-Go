@@ -69,12 +69,14 @@ Set-Location $ENV:GITHUB_WORKSPACE
 
 $customScript = Join-Path $ENV:GITHUB_WORKSPACE ".github/DeployTo$($deploymentSettings.EnvironmentType).ps1"
 if (Test-Path $customScript) {
-    Write-Host "Executing custom deployment script $customScript"
     $parameters = @{
         "type" = $type
         "AuthContext" = $authContext
         "Apps" = $apps
     } + $deploymentSettings
+    Write-Host "Deploy Parameters:"
+    Write-Host $($parameters | ConvertTo-Json -Depth 10)
+    Write-Host "Executing custom deployment script $customScript"
     . $customScript -parameters $parameters
 }
 else {
