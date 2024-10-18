@@ -76,7 +76,7 @@ foreach($sourceRepo in $repositories) {
     if ($settings.templateUrl -eq 'https://github.com/Microsoft/AL-Go-PTE@PPPreview') {
         # Upgrade AL-Go System Files from PPPreview to main (PPPreview branch still uses Y/N prompt and doesn't support direct AL-Go development - i.e. freddydk/AL-Go@branch)
         $parameters = @{
-            "templateUrl" = 'https://github.com/microsoft/AL-Go-PTE@main'
+            "templateUrl" = 'https://github.com/cegekaJG/AL-Go-PTE@cegeka6'
             "directCommit" = 'Y'
         }
         RunWorkflow -name 'Update AL-Go System Files' -parameters $parameters -wait -branch $branch -repository $repository

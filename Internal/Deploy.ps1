@@ -1,10 +1,10 @@
 ﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'directCommit', Justification = 'False positive.')]
 Param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [Hashtable] $config,
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string] $token,
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [bool] $directCommit
 )
 
@@ -20,15 +20,15 @@ function PushChanges
     [string] $CommitMessage,
     [Parameter(HelpMessage = "If true, the commit will be pushed directly to the base branch. If false, a pull request will be created", Mandatory = $false)]
     [bool] $DirectCommit
-)
-{
+) {
     invoke-git add .
 
     if ($DirectCommit) {
         # Direct commit to base branch
         invoke-git commit --allow-empty -m $CommitMessage
         invoke-git push origin $BaseBranch
-    } else {
+    }
+    else {
         # Create PR to base branch
         if (-not (git ls-remote --heads origin $BaseBranch)) {
             Write-Host "Branch $BaseBranch does not exist in origin. Creating it"
@@ -59,7 +59,7 @@ try {
     $token | invoke-gh auth login --with-token
     $ENV:GITHUB_TOKEN = $token
 
-    # All references inside microsoft/AL-Go and forks of it are to microsoft/AL-Go-Actions@main, microsoft/AL-Go-PTE@main and microsoft/AL-Go-AppSource@main
+    # All references inside cegekaJG/AL-Go and forks of it are to microsoft/AL-Go-Actions@main, microsoft/AL-Go-PTE@main and microsoft/AL-Go-AppSource@cegeka6
     # When deploying to new repos, the originalOwnerAndRepo should be changed to the new owner and repo
     $originalOwnerAndRepo = @{
         "actionsRepo"            = "microsoft/AL-Go-Actions"
@@ -113,7 +113,7 @@ try {
 
     $dstOwnerAndRepo = @{
         "perTenantExtensionRepo" = "$($config.githubOwner)/$($config.perTenantExtensionRepo)"
-        "appSourceAppRepo" = "$($config.githubOwner)/$($config.appSourceAppRepo)"
+        "appSourceAppRepo"       = "$($config.githubOwner)/$($config.appSourceAppRepo)"
     }
 
     if ($config.branch -eq 'preview') {
@@ -140,10 +140,10 @@ try {
         Write-Host "Copy template repositories to main branch"
         $additionalRepos = @(
             @{ "repo" = $config.perTenantExtensionRepo; "srcPath" = Join-Path $baseRepoPath "Templates\Per Tenant Extension"; "dstPath" = $perTenantExtensionRepoPath; "branch" = "main" }
-            @{ "repo" = $config.appSourceAppRepo;       "srcPath" = Join-Path $baseRepoPath "Templates\AppSource App";        "dstPath" = $appSourceAppRepoPath;       "branch" = "main" }
-            @{ "repo" = $config.actionsRepo;            "srcPath" = Join-Path $baseRepoPath "Actions";                        "dstPath" = $actionsRepoPath;            "branch" = "main" }
+            @{ "repo" = $config.appSourceAppRepo; "srcPath" = Join-Path $baseRepoPath "Templates\AppSource App"; "dstPath" = $appSourceAppRepoPath; "branch" = "main" }
+            @{ "repo" = $config.actionsRepo; "srcPath" = Join-Path $baseRepoPath "Actions"; "dstPath" = $actionsRepoPath; "branch" = "main" }
             @{ "repo" = $config.perTenantExtensionRepo; "srcPath" = Join-Path $baseRepoPath "Templates\Per Tenant Extension"; "dstPath" = $perTenantExtensionRepoPath; "branch" = "preview" }
-            @{ "repo" = $config.appSourceAppRepo;       "srcPath" = Join-Path $baseRepoPath "Templates\AppSource App";        "dstPath" = $appSourceAppRepoPath;       "branch" = "preview" }
+            @{ "repo" = $config.appSourceAppRepo; "srcPath" = Join-Path $baseRepoPath "Templates\AppSource App"; "dstPath" = $appSourceAppRepoPath; "branch" = "preview" }
         )
     }
 
@@ -228,7 +228,7 @@ try {
             if ($_.Name -eq "AL-Go-Helper.ps1" -and ($config.ContainsKey("defaultBcContainerHelperVersion") -and $config.defaultBcContainerHelperVersion)) {
                 # replace defaultBcContainerHelperVersion
                 $found = $false
-                for($idx=0; $idx -lt $lines.count; $idx++) {
+                for ($idx = 0; $idx -lt $lines.count; $idx++) {
                     if ($lines[$idx] -match '^(\s*)\$defaultBcContainerHelperVersion(\s*)=(\s*)"(.*)" # (.*)$') {
                         $lines[$idx] = "$($Matches[1])`$defaultBcContainerHelperVersion$($Matches[2])=$($Matches[3])""$($config.defaultBcContainerHelperVersion)"" # $($Matches[5])"
                         $found = $true

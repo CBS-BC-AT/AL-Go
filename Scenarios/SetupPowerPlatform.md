@@ -24,7 +24,7 @@ $ppClientSecret = Read-Host -AsSecureString -Prompt 'Enter client secret'
 New-BcAuthContext -includeDeviceLogin | New-ALGoAuthContext -ppClientSecret $ppClientSecret -ppApplicationId $ppClientId | Set-Clipboard
 ```
 
-### Getting username/password authentication context:
+### Getting username/password authentication context
 
 ```powershell
 # If not already installed, install latest BcContainerHelper
@@ -45,7 +45,7 @@ The settings are located at:  `.github/AL-Go-Settings.json`
 ```json
 {
   "type": "PTE",
-  "templateUrl": "https://github.com/microsoft/AL-Go-PTE@main",
+  "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@cegeka6",
   "powerPlatformSolutionFolder": "<PowerPlatformSolutionName>",
   "environments": [
     "<GitHubEnvironmentName>"

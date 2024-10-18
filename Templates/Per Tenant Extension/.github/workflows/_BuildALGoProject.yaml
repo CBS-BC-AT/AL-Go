@@ -93,7 +93,7 @@ jobs:
           lfs: true
 
       - name: Read settings
-        uses: microsoft/AL-Go-Actions/ReadSettings@main
+        uses: cegekaJG/AL-Go-Actions/ReadSettings@cegeka6
         with:
           shell: ${{ inputs.shell }}
           project: ${{ inputs.project }}
@@ -102,14 +102,14 @@ jobs:
       - name: Read secrets
         id: ReadSecrets
         if: github.event_name != 'pull_request'
-        uses: microsoft/AL-Go-Actions/ReadSecrets@main
+        uses: cegekaJG/AL-Go-Actions/ReadSecrets@cegeka6
         with:
           shell: ${{ inputs.shell }}
           gitHubSecrets: ${{ toJson(secrets) }}
           getSecrets: '${{ inputs.secrets }},appDependencySecrets,AZURE_CREDENTIALS'
 
       - name: Determine ArtifactUrl
-        uses: microsoft/AL-Go-Actions/DetermineArtifactUrl@main
+        uses: cegekaJG/AL-Go-Actions/DetermineArtifactUrl@cegeka6
         id: determineArtifactUrl
         with:
           shell: ${{ inputs.shell }}
@@ -124,7 +124,7 @@ jobs:
 
       - name: Download Project Dependencies
         id: DownloadProjectDependencies
-        uses: microsoft/AL-Go-Actions/DownloadProjectDependencies@main
+        uses: cegekaJG/AL-Go-Actions/DownloadProjectDependencies@cegeka6
         env:
           Secrets: '${{ steps.ReadSecrets.outputs.Secrets }}'
         with:
@@ -135,7 +135,7 @@ jobs:
           baselineWorkflowRunId: ${{ inputs.baselineWorkflowRunId }}
 
       - name: Build
-        uses: microsoft/AL-Go-Actions/RunPipeline@main
+        uses: cegekaJG/AL-Go-Actions/RunPipeline@cegeka6
         env:
           Secrets: '${{ steps.ReadSecrets.outputs.Secrets }}'
           BuildMode: ${{ inputs.buildMode }}
@@ -150,7 +150,7 @@ jobs:
       - name: Sign
         if: inputs.signArtifacts && env.doNotSignApps == 'False' && env.keyVaultCodesignCertificateName != ''
         id: sign
-        uses: microsoft/AL-Go-Actions/Sign@main
+        uses: cegekaJG/AL-Go-Actions/Sign@cegeka6
         with:
           shell: ${{ inputs.shell }}
           azureCredentialsJson: '${{ fromJson(steps.ReadSecrets.outputs.Secrets).AZURE_CREDENTIALS }}'
@@ -158,7 +158,7 @@ jobs:
 
       - name: Calculate Artifact names
         id: calculateArtifactsNames
-        uses: microsoft/AL-Go-Actions/CalculateArtifactNames@main
+        uses: cegekaJG/AL-Go-Actions/CalculateArtifactNames@cegeka6
         if: success() || failure()
         with:
           shell: ${{ inputs.shell }}
@@ -252,14 +252,14 @@ jobs:
       - name: Analyze Test Results
         id: analyzeTestResults
         if: (success() || failure()) && env.doNotRunTests == 'False'
-        uses: microsoft/AL-Go-Actions/AnalyzeTests@main
+        uses: cegekaJG/AL-Go-Actions/AnalyzeTests@cegeka6
         with:
           shell: ${{ inputs.shell }}
           project: ${{ inputs.project }}
 
       - name: Cleanup
         if: always()
-        uses: microsoft/AL-Go-Actions/PipelineCleanup@main
+        uses: cegekaJG/AL-Go-Actions/PipelineCleanup@cegeka6
         with:
           shell: ${{ inputs.shell }}
           project: ${{ inputs.project }}

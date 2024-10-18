@@ -429,8 +429,8 @@ function CreateAlGoRepository {
 
             # Update Template references in test apps
             $content = $content.Replace('{TEMPLATEURL}', $template)
-            $content = $content.Replace('https://github.com/microsoft/AL-Go-PTE@main', $template)
-            $content = $content.Replace('https://github.com/microsoft/AL-Go-AppSource@main', $template)
+            $content = $content.Replace('https://github.com/cegekaJG/AL-Go-PTE@cegeka6', $template)
+            $content = $content.Replace('https://github.com/cegekaJG/AL-Go-AppSource@cegeka6', $template)
 
             [System.IO.File]::WriteAllText($file, $content)
         }
