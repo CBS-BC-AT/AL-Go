@@ -138,6 +138,10 @@ foreach($checkfile in $checkfiles) {
     $dstFolder = Join-Path $baseFolder $dstPath
     $srcFolder = GetSrcFolder -repoSettings $repoSettings -templateUrl $templateUrl -templateFolder $templateFolder -srcPath $srcPath
     if ($srcFolder) {
+        if ($type -eq "custom" -and -not (Test-Path -Path $srcFolder -PathType Container)) {
+                OutputWarning "Custom checkfile path $srcFolder not found in template repository."
+                continue
+        }
         Push-Location -Path $srcFolder
         try {
             # Loop through all files in the template repository matching the pattern
