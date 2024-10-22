@@ -421,6 +421,7 @@ jobs:
           Manual resolution required.'
           fi
           git push origin $feature_test_branch
+          echo "NO_CHANGES=false" >> $GITHUB_ENV
 
       - name: Look for existing update PR
         id: check_existing_pr
@@ -482,35 +483,53 @@ jobs:
       - name: Clean up comments
         if: ${{ env.SKIP_ALL == 'false' }}
         uses: actions/github-script@v7
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
-            const urlSubstrings = "${{ env.TEST_PR_URL }}".split('/')
-            const newPrNumber = urlSubstrings[urlSubstrings.length - 1]
-            const oldPrComments = github.rest.issues.listComments({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            })
-            const newPrComments = github.rest.issues.listComments({
-              issue_number: newPrNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            })
-            const allComments = await Promise.all([oldPrComments, newPrComments])
+            let newPrComments = [];
+            if ("${{ env.TEST_PR_URL }}") {
+              const urlSubstrings = "${{ env.TEST_PR_URL }}".split('/');
+              const newPrNumber = urlSubstrings[urlSubstrings.length - 1];
+              try {
+                newPrComments = await github.rest.issues.listComments({
+                  issue_number: newPrNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo
+                });
+              } catch (error) {
+                process.stdout.write(`::error::Error retrieving comments from ${newPrNumber}: ${error.message}\n`);
+                process.exit(1);
+              }
+            }
+            try {
+              const oldPrComments = await github.rest.issues.listComments({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+            } catch (error) {
+              process.stdout.write(`::error::Error retrieving comments from ${context.issue.number}: ${error.message}\n`);
+              process.exit(1);
+            }
+            const allComments = [oldPrComments, newPrComments];
             allComments.forEach(comments => {
               comments.data.forEach(comment => {
                 if (comment.user.login === 'github-actions[bot]' && comment.body.startsWith('${{ env.NOTICE_COMMENT_TAG }}')) {
-                  github.rest.issues.deleteComment({
-                    comment_id: comment.id,
-                    owner: context.repo.owner,
-                    repo: context.repo.repo
-                  })
-                  process.stdout.write(`Deleted comment ${comment.html_url}\n`)
+                  try {
+                    await github.rest.issues.deleteComment({
+                      comment_id: comment.id,
+                      owner: context.repo.owner,
+                      repo: context.repo.repo
+                    });
+                    process.stdout.write(`Deleted comment ${comment.html_url}\n`);
+                  } catch (error) {
+                    process.stdout.write(`::notice::Error deleting comment ${comment.html_url}: ${error.message}\n`);
+                  }
                 }
-              })
-            })
+              });
+            });
 
       - name: Comment on the new pull request
         id: comment_on_new_pr
