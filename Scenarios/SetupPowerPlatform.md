@@ -45,7 +45,7 @@ The settings are located at:  `.github/AL-Go-Settings.json`
 ```json
 {
   "type": "PTE",
-  "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@cegeka6",
+  "templateUrl": "https://github.com/microsoft/AL-Go-PTE@main",
   "powerPlatformSolutionFolder": "<PowerPlatformSolutionName>",
   "environments": [
     "<GitHubEnvironmentName>"

@@ -42,13 +42,13 @@ jobs:
 
       - name: Initialize the workflow
         id: init
-        uses: cegekaJG/AL-Go-Actions/WorkflowInitialize@cegeka6
+        uses: microsoft/AL-Go-Actions/WorkflowInitialize@main
         with:
           shell: powershell
 
       - name: Read settings
         id: ReadSettings
-        uses: cegekaJG/AL-Go-Actions/ReadSettings@cegeka6
+        uses: microsoft/AL-Go-Actions/ReadSettings@main
         with:
           shell: powershell
 
@@ -61,13 +61,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Read settings
-        uses: cegekaJG/AL-Go-Actions/ReadSettings@cegeka6
+        uses: microsoft/AL-Go-Actions/ReadSettings@main
         with:
           shell: powershell
           get: templateUrl
 
       - name: Check for updates to AL-Go system files
-        uses: cegekaJG/AL-Go-Actions/CheckForUpdates@cegeka6
+        uses: microsoft/AL-Go-Actions/CheckForUpdates@main
         with:
           shell: powershell
           templateUrl: ${{ env.templateUrl }}

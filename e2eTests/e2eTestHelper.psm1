@@ -151,12 +151,12 @@ function RunWorkflow {
     Write-Host "Get Workflows"
     $url = "https://api.github.com/repos/$repository/actions/workflows"
     $workflows = ((InvokeWebRequest -Method Get -Headers $headers -Uri $url -retry).Content | ConvertFrom-Json).workflows
-    $workflows | ForEach-Object { Write-Host "- $($_.Name)"}
+    $workflows | ForEach-Object { Write-Host "- $($_.Name)" }
     if (!$workflows) {
         Write-Host "No workflows found, waiting 60 seconds and retrying"
         Start-Sleep -seconds 60
         $workflows = ((InvokeWebRequest -Method Get -Headers $headers -Uri $url -retry).Content | ConvertFrom-Json).workflows
-        $workflows | ForEach-Object { Write-Host "- $($_.Name)"}
+        $workflows | ForEach-Object { Write-Host "- $($_.Name)" }
         if (!$workflows) {
             throw "No workflows found"
         }
@@ -180,7 +180,7 @@ function RunWorkflow {
     $url = "https://api.github.com/repos/$repository/actions/workflows/$($workflow.id)/dispatches"
     Write-Host $url
     $body = @{
-        "ref" = "refs/heads/$branch"
+        "ref"    = "refs/heads/$branch"
         "inputs" = $parameters
     }
     InvokeWebRequest -Method Post -Headers $headers -Uri $url -retry -Body ($body | ConvertTo-Json) | Out-Null
@@ -228,7 +228,7 @@ function CancelAllWorkflows {
         Start-Sleep -Seconds 60
     }
     $runs = gh api /repos/$repository/actions/runs | ConvertFrom-Json
-    foreach($run in $runs.workflow_runs) {
+    foreach ($run in $runs.workflow_runs) {
         Write-Host $run.name
         if ($run.status -eq 'in_progress') {
             Write-Host "Cancelling $($run.name) run $($run.id)"
@@ -249,7 +249,7 @@ function WaitAllWorkflows {
     }
     $runs = gh api /repos/$repository/actions/runs | ConvertFrom-Json
     $workflowRuns = $runs.workflow_runs | Select-Object -First $top
-    foreach($run in $workflowRuns) {
+    foreach ($run in $workflowRuns) {
         WaitWorkflow -repository $repository -runid $run.id -noDelay -noError:$noError
     }
 }
@@ -326,14 +326,14 @@ function CreateNewAppInFolder {
         "  end;"
         "}")
     $appJson = [ordered]@{
-        "id" = $id
-        "name" = $name
-        "version" = $version
-        "publisher" = $publisher
-        "dependencies" = $dependencies
-        "application" = $application
-        "runtime" = $runtime
-        "idRanges" = @( @{ "from" = $objID; "to" = $objID } )
+        "id"                     = $id
+        "name"                   = $name
+        "version"                = $version
+        "publisher"              = $publisher
+        "dependencies"           = $dependencies
+        "application"            = $application
+        "runtime"                = $runtime
+        "idRanges"               = @( @{ "from" = $objID; "to" = $objID } )
         "resourceExposurePolicy" = @{ "allowDebugging" = $true; "allowDownloadingSource" = $true; "includeSourceInSymbolFile" = $true }
     }
     $folder = Join-Path $folder $name
@@ -385,7 +385,7 @@ function CreateAlGoRepository {
     Set-Location $path
     if ($waitMinutes) {
         Write-Host "Waiting $waitMinutes minutes"
-        Start-Sleep -seconds ($waitMinutes*60)
+        Start-Sleep -seconds ($waitMinutes * 60)
     }
     if ($private) {
         Write-Host -ForegroundColor Yellow "`nCreating private repository $repository (based on $template)"
@@ -429,8 +429,8 @@ function CreateAlGoRepository {
 
             # Update Template references in test apps
             $content = $content.Replace('{TEMPLATEURL}', $template)
-            $content = $content.Replace('https://github.com/cegekaJG/AL-Go-PTE@cegeka6', $template)
-            $content = $content.Replace('https://github.com/cegekaJG/AL-Go-AppSource@cegeka6', $template)
+            $content = $content.Replace('https://github.com/microsoft/AL-Go-PTE@main', $template)
+            $content = $content.Replace('https://github.com/microsoft/AL-Go-AppSource@main', $template)
 
             [System.IO.File]::WriteAllText($file, $content)
         }
@@ -597,7 +597,7 @@ function RemoveRepository {
     }
 
     if ($path) {
-        if (-not $path.StartsWith("$([System.IO.Path]::GetTempPath())",[StringComparison]::InvariantCultureIgnoreCase)) {
+        if (-not $path.StartsWith("$([System.IO.Path]::GetTempPath())", [StringComparison]::InvariantCultureIgnoreCase)) {
             throw "$path is not temppath"
         }
         else {

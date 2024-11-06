@@ -61,14 +61,14 @@ jobs:
           lfs: true
 
       - name: Read settings
-        uses: cegekaJG/AL-Go-Actions/ReadSettings@cegeka6
+        uses: microsoft/AL-Go-Actions/ReadSettings@main
         with:
           shell: ${{ inputs.shell }}
           project: ${{ inputs.project }}
           get: type,powerPlatformSolutionFolder,appRevision,appBuild
 
       - name: Build
-        uses: cegekaJG/AL-Go-Actions/BuildPowerPlatform@cegeka6
+        uses: microsoft/AL-Go-Actions/BuildPowerPlatform@main
         with:
           shell: ${{ inputs.shell }}
           solutionFolder: ${{ inputs.project }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: Calculate Artifact names
         id: calculateArtifactsNames
-        uses: cegekaJG/AL-Go-Actions/CalculateArtifactNames@cegeka6
+        uses: microsoft/AL-Go-Actions/CalculateArtifactNames@main
         if: success() || failure()
         with:
           shell: ${{ inputs.shell }}

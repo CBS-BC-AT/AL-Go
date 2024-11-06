@@ -45,7 +45,7 @@ $repoPath = (Get-Location).Path
 $repositories = @('bcsamples-WarehouseHelper', 'bcsamples-takeorder', 'bcsamples-CoffeeMR')
 $repoVars = @{}
 
-foreach($sourceRepo in $repositories) {
+foreach ($sourceRepo in $repositories) {
     $repoName = [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetTempFileName())
     Push-Location
     $repository = "$githubOwner/$repoName"
@@ -61,9 +61,9 @@ foreach($sourceRepo in $repositories) {
         -repository $repository `
         -branch $branch `
         -contentScript {
-            Param([string] $path)
-            Remove-PropertiesFromJsonFile -path (Join-Path $path '.github/AL-Go-Settings.json') -properties @('environments','DeployTo*')
-        }
+        Param([string] $path)
+        Remove-PropertiesFromJsonFile -path (Join-Path $path '.github/AL-Go-Settings.json') -properties @('environments', 'DeployTo*')
+    }
 
     $repoPath = (Get-Location).Path
     Write-Host "Repo Path: $repoPath"
@@ -76,7 +76,7 @@ foreach($sourceRepo in $repositories) {
     if ($settings.templateUrl -eq 'https://github.com/Microsoft/AL-Go-PTE@PPPreview') {
         # Upgrade AL-Go System Files from PPPreview to main (PPPreview branch still uses Y/N prompt and doesn't support direct AL-Go development - i.e. freddydk/AL-Go@branch)
         $parameters = @{
-            "templateUrl" = 'https://github.com/cegekaJG/AL-Go-PTE@cegeka6'
+            "templateUrl"  = 'https://github.com/microsoft/AL-Go-PTE@main'
             "directCommit" = 'Y'
         }
         RunWorkflow -name 'Update AL-Go System Files' -parameters $parameters -wait -branch $branch -repository $repository
@@ -97,14 +97,14 @@ foreach($sourceRepo in $repositories) {
     Pop-Location
 
     $repoVars."$sourceRepo" = @{
-        "run" = $run
+        "run"      = $run
         "repoPath" = $repoPath
         "repoName" = $repoName
         "settings" = $settings
     }
 }
 
-foreach($sourceRepo in $repositories) {
+foreach ($sourceRepo in $repositories) {
     $repoVar = $repoVars."$sourceRepo"
     $run = $repoVar.run
     $repoPath = $repoVar.repoPath
@@ -117,7 +117,7 @@ foreach($sourceRepo in $repositories) {
     WaitWorkflow -repository $repository -runid $run.id
 
     # Test artifacts generated
-    Test-ArtifactsFromRun -runid $run.id -folder 'artifacts' -expectedArtifacts @{"Apps"=1} -repoVersion '*.*' -appVersion '*.*'
+    Test-ArtifactsFromRun -runid $run.id -folder 'artifacts' -expectedArtifacts @{"Apps" = 1 } -repoVersion '*.*' -appVersion '*.*'
 
     # Test PowerPlatform solution artifact
     Test-Path -Path "./artifacts/$($settings.powerPlatformSolutionFolder)-$branch-PowerPlatformSolution-*.*.*.*/$($settings.powerPlatformSolutionFolder).zip" | Should -Be $true -Because "PowerPlatform solution artifact exists"

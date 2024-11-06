@@ -59,7 +59,7 @@ try {
     $token | invoke-gh auth login --with-token
     $ENV:GITHUB_TOKEN = $token
 
-    # All references inside cegekaJG/AL-Go and forks of it are to microsoft/AL-Go-Actions@main, microsoft/AL-Go-PTE@main and microsoft/AL-Go-AppSource@cegeka6
+    # All references inside microsoft/AL-Go and forks of it are to microsoft/AL-Go-Actions@main, microsoft/AL-Go-PTE@main and microsoft/AL-Go-AppSource@cegeka6
     # When deploying to new repos, the originalOwnerAndRepo should be changed to the new owner and repo
     $originalOwnerAndRepo = @{
         "actionsRepo"            = "microsoft/AL-Go-Actions"

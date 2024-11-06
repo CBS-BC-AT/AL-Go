@@ -29,7 +29,7 @@ jobs:
 
       - name: Initialize the workflow
         id: init
-        uses: cegekaJG/AL-Go-Actions/WorkflowInitialize@cegeka6
+        uses: microsoft/AL-Go-Actions/WorkflowInitialize@main
         with:
           shell: powershell
 
@@ -43,14 +43,14 @@ jobs:
           Add-Content -encoding utf8 -Path $env:GITHUB_ENV -Value "envName=$envName"
 
       - name: Read settings
-        uses: cegekaJG/AL-Go-Actions/ReadSettings@cegeka6
+        uses: microsoft/AL-Go-Actions/ReadSettings@main
         with:
           shell: powershell
           get: powerPlatformSolutionFolder
 
       - name: Read secrets
         id: ReadSecrets
-        uses: cegekaJG/AL-Go-Actions/ReadSecrets@cegeka6
+        uses: microsoft/AL-Go-Actions/ReadSecrets@main
         with:
           shell: powershell
           gitHubSecrets: ${{ toJson(secrets) }}
@@ -58,7 +58,7 @@ jobs:
 
       - name: Determine Deployment Environments
         id: DetermineDeploymentEnvironments
-        uses: cegekaJG/AL-Go-Actions/DetermineDeploymentEnvironments@cegeka6
+        uses: microsoft/AL-Go-Actions/DetermineDeploymentEnvironments@main
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
@@ -80,7 +80,7 @@ jobs:
           Add-Content -encoding utf8 -Path $env:GITHUB_ENV -Value "solutionFolder=$solutionFolder"
 
       - name: Export and push changes to Power Platform
-        uses: cegekaJG/AL-Go-Actions/DeployPowerPlatform@cegeka6
+        uses: microsoft/AL-Go-Actions/DeployPowerPlatform@main
         env:
           Secrets: '${{ steps.ReadSecrets.outputs.Secrets }}'
         with:
@@ -91,7 +91,7 @@ jobs:
 
       - name: Finalize the workflow
         if: always()
-        uses: cegekaJG/AL-Go-Actions/WorkflowPostProcess@cegeka6
+        uses: microsoft/AL-Go-Actions/WorkflowPostProcess@main
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
