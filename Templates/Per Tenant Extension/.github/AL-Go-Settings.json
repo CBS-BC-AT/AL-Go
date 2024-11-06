@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/AL-Go/v5.1/Schema/algoreposettingssyntax.json",
+  "$schema": "https://raw.githubusercontent.com/microsoft/AL-Go/v6.0/Schema/algoreposettingssyntax.json",
   "buildModes": [
     "Default"
   ],
