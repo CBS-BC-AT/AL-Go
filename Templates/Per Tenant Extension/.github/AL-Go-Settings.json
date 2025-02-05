@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/AL-Go/v5.1/Schema/algoreposettingssyntax.json",
+  "$schema": "https://raw.githubusercontent.com/microsoft/AL-Go/v6.3/Schema/algoreposettingssyntax.json",
   "buildModes": [
     "Default"
   ],
@@ -14,13 +14,13 @@
   "rulesetFile": "CegekaAT.ruleset.json",
   "runs-on": "ubuntu-latest",
   "skipUpgrade": true,
-  "templateUrl": "https://github.com/cegekaJG/AL-Go-PTE@cegeka",
+  "templateUrl": "https://github.com/CBS-BC-AT/AL-Go-PTE@cegeka",
   "templateFiles": [
     ".github/DeployTo*.ps1",
     ".schemas/*"
   ],
   "type": "PTE",
-  "UpdateGitHubGoSystemFilesSchedule": "0 2 * * 1,3,5",
+  "UpdateGitHubGoSystemFilesSchedule": "0 2 * * 2",
   "useCompilerFolder": true,
   "vsixFile": "latest"
 }
