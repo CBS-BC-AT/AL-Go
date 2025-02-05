@@ -19,7 +19,7 @@
     ".github/DeployTo*.ps1",
     ".schemas/*"
   ],
-  "type": "PTE",
+  "type": "AppSource App",
   "UpdateGitHubGoSystemFilesSchedule": "0 2 * * 2",
   "useCompilerFolder": true,
   "vsixFile": "latest"
