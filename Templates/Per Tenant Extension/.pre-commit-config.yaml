@@ -23,6 +23,3 @@ repos:
         args: ["--schemafile", ".schemas/workspace.schema.json"]
         types_or: []
         files: ^[^\/]*\.code-workspace$
-# Exclude GitHub Actions workflows,
-# TODO: Remove after https://github.com/microsoft/AL-Go/issues/948 resolved
-exclude: ^.github/workflows/.*$
