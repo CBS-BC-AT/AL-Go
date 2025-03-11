@@ -293,6 +293,61 @@ function ModifyUpdateALGoSystemFiles {
     $yaml.Replace('jobs:/UpdateALGoSystemFiles:/', $updateALGoSystemFilesJob.content)
 }
 
+function ModifyUpdateTestBranch {
+    param(
+        [Yaml] $yaml,
+        [hashtable] $repoSettings
+    )
+
+    # The Update Test branch workflow can have a RepoSetting called UseTestBranch, which will be used to enable or disable the workflow
+    if ($repoSettings.Keys -contains 'UseTestBranch') {
+        $useTestBranch = $repoSettings.UseTestBranch
+    }
+    else {
+        $useTestBranch = $false
+    }
+
+    $trigger = $yaml.Get('on:/')
+    $trigger.Replace('', '')
+
+    if ($useTestBranch) {
+        $trigger.Add('', 'issue_comments:')
+        $trigger.Add('issue_comments:', "type: [ 'created' ]")
+    }
+    else {
+        $trigger.Add('', 'never:')
+    }
+
+    $yaml.Replace('on:/', $trigger.Content)
+}
+
+function ModifyDocumentMergedCommits {
+    Param(
+        [Yaml] $yaml,
+        [hashtable] $repoSettings
+    )
+
+    # The Document Merged Commits workflow can have a RepoSetting called UseTestBranch, which will be used to enable or disable the workflow
+    if ($repoSettings.Keys -contains 'UseTestBranch') {
+        $useTestBranch = $repoSettings.UseTestBranch
+    }
+    else {
+        $useTestBranch = $false
+    }
+
+    $trigger = $yaml.Get('on:/')
+    $trigger.Replace('', '')
+
+    if ($useTestBranch) {
+        $trigger.Add('', "pull_request: [ 'closed' ]")
+    }
+    else {
+        $trigger.Add('', 'never:')
+    }
+
+    $yaml.Replace('on:/', $trigger.Content)
+}
+
 function GetWorkflowContentWithChangesFromSettings {
     Param(
         [string] $srcFile,
@@ -384,6 +439,14 @@ function GetWorkflowContentWithChangesFromSettings {
 
     if($baseName -eq 'UpdateGitHubGoSystemFiles') {
         ModifyUpdateALGoSystemFiles -yaml $yaml -repoSettings $repoSettings
+    }
+
+    if ($baseName -eq "UpdateTestBranch") {
+        ModifyUpdateTestBranch -yaml $yaml -repoSettings $repoSettings
+    }
+
+    if($baseName -eq "DocumentMergedCommits") {
+        ModifyDocumentMergedCommits -yaml $yaml -repoSettings $repoSettings
     }
 
     # combine all the yaml file lines into a single string with LF line endings
