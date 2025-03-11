@@ -307,18 +307,12 @@ function ModifyUpdateTestBranch {
         $useTestBranch = $false
     }
 
-    $trigger = $yaml.Get('on:/')
-    $trigger.Replace('', '')
-
-    if ($useTestBranch) {
-        $trigger.Add('', 'issue_comments:')
-        $trigger.Add('issue_comments:', "type: [ 'created' ]")
+    if($useTestBranch) {
+        invoke-gh workflow enable "UpdateTestBranch"
     }
     else {
-        $trigger.Add('', 'never:')
+        invoke-gh workflow disable "UpdateTestBranch"
     }
-
-    $yaml.Replace('on:/', $trigger.Content)
 }
 
 function ModifyDocumentMergedCommits {
@@ -338,14 +332,12 @@ function ModifyDocumentMergedCommits {
     $trigger = $yaml.Get('on:/')
     $trigger.Replace('', '')
 
-    if ($useTestBranch) {
-        $trigger.Add('', "pull_request: [ 'closed' ]")
+    if($useTestBranch) {
+        invoke-gh workflow enable "UpdateTestBranch"
     }
     else {
-        $trigger.Add('', 'never:')
+        invoke-gh workflow disable "UpdateTestBranch"
     }
-
-    $yaml.Replace('on:/', $trigger.Content)
 }
 
 function GetWorkflowContentWithChangesFromSettings {
