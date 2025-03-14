@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [Parameter(HelpMessage = "The GitHub actor running the action", Mandatory = $false)]
     [string] $actor,
     [Parameter(HelpMessage = "The GitHub token running the action", Mandatory = $false)]
@@ -109,6 +109,9 @@ $checkfiles = @(
     @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*.copy.md'; 'type' = 'releasenotes' }
 )
 
+# Add template files from RepoSettings, if any
+$checkFiles += GetCustomTemplateFiles -repoSettings $repoSettings
+
 # Get the list of projects in the current repository
 $baseFolder = $ENV:GITHUB_WORKSPACE
 $projects = @(GetProjectsFromRepository -baseFolder $baseFolder -projectsFromSettings $repoSettings.projects)
@@ -142,6 +145,10 @@ foreach($checkfile in $checkfiles) {
     $dstFolder = Join-Path $baseFolder $dstPath
     $srcFolder = GetSrcFolder -repoSettings $repoSettings -templateUrl $templateUrl -templateFolder $templateFolder -srcPath $srcPath
     if ($srcFolder) {
+        if ($type -eq "custom" -and -not (Test-Path -Path $srcFolder -PathType Container)) {
+                OutputWarning "Custom checkfile path $srcFolder not found in template repository."
+                continue
+        }
         Push-Location -Path $srcFolder
         try {
             # Loop through all files in the template repository matching the pattern

@@ -291,6 +291,9 @@ if ($customScript) {
         "Apps" = $apps
         "Dependencies" = $dependencies
     } + $deploymentSettings
+    Write-Host "Deploy Parameters:"
+    Write-Host $($parameters | ConvertTo-Json -Depth 10)
+    Write-Host "Executing custom deployment script $customScript"
     . $customScript -parameters $parameters
 }
 else {
