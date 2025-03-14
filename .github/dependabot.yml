@@ -12,34 +12,6 @@ updates:
       applies-to: version-updates
       dependency-type: "production"
   ignore:
-    - dependency-name: "microsoft/AL-Go-Actions/*"
+    - dependency-name: "CBS-BC-AT/AL-Go-Actions/*"
   schedule:
     interval: weekly
-- package-ecosystem: github-actions
-  directories:
-    - ".github/workflows/"
-    - "/Templates/**/.github/workflows/"
-    - "/Actions/**/"
-  groups:
-    External-Dependencies:
-      applies-to: version-updates
-      dependency-type: "production"
-  ignore:
-    - dependency-name: "microsoft/AL-Go-Actions/*"
-  schedule:
-    interval: weekly
-  target-branch: cegeka
-- package-ecosystem: github-actions
-  directories:
-    - ".github/workflows/"
-    - "/Templates/**/.github/workflows/"
-    - "/Actions/**/"
-  groups:
-    External-Dependencies:
-      applies-to: version-updates
-      dependency-type: "production"
-  ignore:
-    - dependency-name: "microsoft/AL-Go-Actions/*"
-  schedule:
-    interval: weekly
-  target-branch: testbranch6

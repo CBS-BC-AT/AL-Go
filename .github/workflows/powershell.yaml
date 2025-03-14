@@ -6,9 +6,9 @@ name: PSScriptAnalyzer
 
 on:
   push:
-    branches: [ "main", cegeka ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", cegeka ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
