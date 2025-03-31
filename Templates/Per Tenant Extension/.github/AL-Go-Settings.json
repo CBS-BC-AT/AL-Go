@@ -20,7 +20,6 @@
     ".schemas/*"
   ],
   "type": "PTE",
-  "UpdateGitHubGoSystemFilesSchedule": "0 2 * * 2",
   "useCompilerFolder": true,
   "vsixFile": "latest"
 }
