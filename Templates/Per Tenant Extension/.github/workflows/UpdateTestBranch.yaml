@@ -196,7 +196,7 @@ jobs:
               continue
             fi
             if [[ $(git rev-parse --verify "$commit" 2>/dev/null) ]]; then
-              commit=${commit:0:7}
+              commit=${commit:0:8}
               picked_commits+=("$commit")
               echo "::debug::Commit $commit found."
             else
