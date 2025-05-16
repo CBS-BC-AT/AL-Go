@@ -326,8 +326,14 @@ jobs:
           no_changes=true
 
           for commit in "${feature_commits[@]}"; do
-            git cherry-pick --empty=keep -x $commit 1>/dev/null || true
+            git cherry-pick --empty=keep -x $commit 1>/dev/null
+            if [ $? -ne 0 ]; then
+              echo "::error::Cherry-pick failed for commit $commit."
+              success=false
+              break
+            fi
             if [ -n "$(git status --porcelain | grep '^U')" ]; then
+              echo "::error::Unmerged files detected after cherry-pick of $commit."
               success=false
               break
             fi
@@ -488,48 +494,51 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
-            let newPrComments = [];
-            if ("${{ env.TEST_PR_URL }}") {
-              const urlSubstrings = "${{ env.TEST_PR_URL }}".split('/');
-              const newPrNumber = urlSubstrings[urlSubstrings.length - 1];
+            (async () => {
+              let newPrComments = [];
+              if ("${{ env.TEST_PR_URL }}") {
+                const urlSubstrings = "${{ env.TEST_PR_URL }}".split('/');
+                const newPrNumber = urlSubstrings[urlSubstrings.length - 1];
+                try {
+                  newPrComments = await github.rest.issues.listComments({
+                    issue_number: newPrNumber,
+                    owner: context.repo.owner,
+                    repo: context.repo.repo
+                  });
+                } catch (error) {
+                  process.stdout.write(`::error::Error retrieving comments from ${newPrNumber}: ${error.message}\n`);
+                  process.exit(1);
+                }
+              }
+              let oldPrComments = [];
               try {
-                newPrComments = await github.rest.issues.listComments({
-                  issue_number: newPrNumber,
+                oldPrComments = await github.rest.issues.listComments({
+                  issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo
                 });
               } catch (error) {
-                process.stdout.write(`::error::Error retrieving comments from ${newPrNumber}: ${error.message}\n`);
+                process.stdout.write(`::error::Error retrieving comments from ${context.issue.number}: ${error.message}\n`);
                 process.exit(1);
               }
-            }
-            try {
-              const oldPrComments = await github.rest.issues.listComments({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo
-              });
-            } catch (error) {
-              process.stdout.write(`::error::Error retrieving comments from ${context.issue.number}: ${error.message}\n`);
-              process.exit(1);
-            }
-            const allComments = [oldPrComments, newPrComments];
-            allComments.forEach(comments => {
-              comments.data.forEach(comment => {
-                if (comment.user.login === 'github-actions[bot]' && comment.body.startsWith('${{ env.NOTICE_COMMENT_TAG }}')) {
-                  try {
-                    await github.rest.issues.deleteComment({
-                      comment_id: comment.id,
-                      owner: context.repo.owner,
-                      repo: context.repo.repo
-                    });
-                    process.stdout.write(`Deleted comment ${comment.html_url}\n`);
-                  } catch (error) {
-                    process.stdout.write(`::notice::Error deleting comment ${comment.html_url}: ${error.message}\n`);
+              const allComments = [oldPrComments, newPrComments];
+              allComments.forEach(comments => {
+                comments.data.forEach(comment => {
+                  if (comment.user.login === 'github-actions[bot]' && comment.body.startsWith('${{ env.NOTICE_COMMENT_TAG }}')) {
+                    try {
+                      await github.rest.issues.deleteComment({
+                        comment_id: comment.id,
+                        owner: context.repo.owner,
+                        repo: context.repo.repo
+                      });
+                      process.stdout.write(`Deleted comment ${comment.html_url}\n`);
+                    } catch (error) {
+                      process.stdout.write(`::notice::Error deleting comment ${comment.html_url}: ${error.message}\n`);
+                    }
                   }
-                }
+                });
               });
-            });
+            })();
 
       - name: Comment on the new pull request
         id: comment_on_new_pr
