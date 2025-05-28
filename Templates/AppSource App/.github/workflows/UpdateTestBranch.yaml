@@ -274,13 +274,28 @@ jobs:
           if [ -z "$picked_commits" ] && [ -z "$added_commits" ]; then
             new_commits=("${feature_commits[@]}")
           else
-            for commit in "${feature_commits[@]}"; do
-              if [[ ! " ${picked_commits[@]} " =~ " $commit " ]] && [[ ! " ${added_commits[@]} " =~ " $commit " ]]; then
-                new_commits+=($commit)
+            for feature_commit in "${feature_commits[@]}"; do
+              found=0
+              for picked in "${picked_commits[@]}"; do
+                if [[ "$picked" == "$feature_commit"* ]]; then
+                  found=1
+                  break
+                fi
+              done
+              if [ $found -eq 0 ]; then
+                for added in "${added_commits[@]}"; do
+                  if [[ "$added" == "$feature_commit"* ]]; then
+                    found=1
+                    break
+                  fi
+                done
+              fi
+              if [ $found -eq 0 ]; then
+                new_commits+=("$feature_commit")
               fi
             done
           fi
-          if [ -z "$new_commits" ]; then
+          if [ ${#new_commits[@]} -eq 0 ]; then
             echo "SKIP_ALL=true" >> $GITHUB_ENV
             echo "::notice::No new commits to cherry-pick found. Skipping update."
           else
