@@ -206,7 +206,7 @@ jobs:
           unset IFS
 
           echo "Cherry-picked commits:"
-          for commit in $picked_commits; do
+          for commit in "${picked_commits[@]}"; do
             commit_message=$(git log --format=%s -n 1 $commit)
             echo "$(git log --pretty=format:"- %s (%H)" -n 1 $commit)"
             echo "::debug::$commit"
