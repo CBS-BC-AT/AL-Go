@@ -14,6 +14,7 @@
   "rulesetFile": "CegekaAT.ruleset.json",
   "runs-on": "ubuntu-latest",
   "skipUpgrade": true,
+  "BcContainerHelperVersion": "latest",
   "templateUrl": "https://github.com/CBS-BC-AT/AL-Go-PTE@cegeka",
   "templateFiles": [
     ".github/DeployTo*.ps1",
