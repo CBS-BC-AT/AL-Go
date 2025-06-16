@@ -35,7 +35,7 @@ function DownloadTemplateRepository {
 
     # Download template repository
     $tempName = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
-    InvokeWebRequest -Headers $headers -Uri $archiveUrl -OutFile "$tempName.zip" -retry
+    InvokeWebRequest -Headers $headers -Uri $archiveUrl -OutFile "$tempName.zip"
     Expand-7zipArchive -Path "$tempName.zip" -DestinationPath $tempName
     Remove-Item -Path "$tempName.zip"
     return $tempName
@@ -47,33 +47,14 @@ function GetLatestTemplateSha {
         [string] $apiUrl,
         [string] $templateUrl
     )
+
     $branch = $templateUrl.Split('@')[1]
-
+    Write-Host "Get latest SHA for $templateUrl"
     try {
-        Write-Host "Get latest SHA for $templateUrl"
-        $response = InvokeWebRequest -Headers $headers -Uri "$apiUrl/branches?per_page=100" -retry
+        $branchInfo = (InvokeWebRequest -Headers $headers -Uri "$apiUrl/branches/$branch").Content | ConvertFrom-Json
     } catch {
-        Write-Host "Exception: $($_.Exception.Message)"
-        if ($_.Exception.Message -like "*Unauthorized*") {
-            try {
-                Write-Host "retry without Authorization header"
-                $headers.Remove('Authorization')
-                $response = InvokeWebRequest -Headers $headers -Uri "$apiUrl/branches?per_page=100" -retry
-            }
-            catch {
-                throw "Failed to update AL-Go System Files. Make sure that the personal access token, defined in the secret called GhTokenWorkflow, is not expired and it has permission to update workflows. (Error was $($_.Exception.Message))"
-            }
-        }
-        else {
-            throw $_.Exception.Message
-        }
+        throw "Failed to update AL-Go System Files. Could not get the latest SHA from template ($templateUrl). (Error was $($_.Exception.Message))"
     }
-
-    $branchInfo = ($response.content | ConvertFrom-Json) | Where-Object { $_.Name -eq $branch }
-    if (!$branchInfo) {
-        throw "$templateUrl doesn't exist"
-    }
-
     return $branchInfo.commit.sha
 }
 
@@ -438,7 +419,7 @@ function IsDirectALGo {
     $directALGo = $templateUrl -like 'https://github.com/*/AL-Go@*'
     if ($directALGo) {
         if ($templateUrl -like 'https://github.com/microsoft/AL-Go@*' -and -not ($templateUrl -like 'https://github.com/microsoft/AL-Go@*/*')) {
-            throw "You cannot use microsoft/AL-Go as a template repository. Please use a fork of AL-Go instead."
+            throw "You cannot use microsoft/AL-Go as a template repository. Please use microsoft/AL-Go-PTE, microsoft/AL-Go-AppSource or a fork of AL-Go instead."
         }
     }
     return $directALGo
@@ -483,6 +464,38 @@ function GetSrcFolder {
     }
     $path = Join-Path -Path (Split-Path -Path (Split-Path -Path $path -Parent) -Parent) -ChildPath $srcPath
     return $path
+}
+
+function GetModifiedSettingsContent {
+    Param(
+        [string] $srcSettingsFile,
+        [string] $dstSettingsFile
+    )
+
+    $srcSettings = Get-ContentLF -Path $srcSettingsFile | ConvertFrom-Json
+
+    $dstSettings = $null
+    if(Test-Path -Path $dstSettingsFile -PathType Leaf) {
+        $dstSettings = Get-ContentLF -Path $dstSettingsFile | ConvertFrom-Json
+    }
+
+    if(!$dstSettings) {
+        # If the destination settings file does not exist or it's empty, create an new settings object with default values from the source settings (which includes the $schema property already)
+        $dstSettings = $srcSettings
+    }
+    else {
+        # Change the $schema property to be the same as the source settings file (add it if it doesn't exist)
+        $schemaKey = '$schema'
+        $schemaValue = $srcSettings."$schemaKey"
+
+        $dstSettings | Add-Member -MemberType NoteProperty -Name "$schemaKey" -Value $schemaValue -Force
+
+        # Make sure the $schema property is the first property in the object
+        $dstSettings = $dstSettings | Select-Object @{ Name = '$schema'; Expression = { $_.'$schema' } }, * -ExcludeProperty '$schema'
+    }
+
+
+    return $dstSettings | ConvertTo-JsonLF
 }
 
 function UpdateSettingsFile {

@@ -40,21 +40,25 @@ if ($update -eq 'Y') {
     }
 }
 
-$readToken = $token
 if ($token) {
     # token comes from a secret, base 64 encoded
     $token = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($token))
-
-    # Get token with read permissions for this and the template repository - if private and in the same organization
-    $repositories = @($ENV:GITHUB_REPOSITORY)
-    if ($templateUrl -like "https://github.com/$($ENV:GITHUB_REPOSITORY_OWNER)/*") {
-        $repositories += $templateUrl.Split('@')[0]
-    }
-    $readToken = GetAccessToken -token $token -permissions @{"actions"="read";"contents"="read";"metadata"="read"} -repositories $repositories
 }
 
 # Use Authenticated API request if possible to avoid the 60 API calls per hour limit
-$headers = GetHeaders -token $readToken
+$headers = GetHeaders -token $ENV:GITHUB_TOKEN
+$templateRepositoryUrl = $templateUrl.Split('@')[0]
+$response = Invoke-WebRequest -UseBasicParsing -Headers $headers -Method Head -Uri $templateRepositoryUrl -ErrorAction SilentlyContinue
+if (-not $response -or $response.StatusCode -ne 200) {
+    # GITHUB_TOKEN doesn't have access to template repository, must be is private/internal
+    # Get token with read permissions for the template repository
+    # NOTE that the GitHub app needs to be installed in the template repository for this to work
+    $templateRepository = $templateRepositoryUrl.Split('/')[-2..-1] -join '/'
+    $templateReadToken = GetAccessToken -token $token -permissions @{"actions"="read";"contents"="read";"metadata"="read"} -repository $templateRepository
+
+    # Use read token for authenticated API request
+    $headers = GetHeaders -token $templateReadToken
+}
 
 # CheckForUpdates will read all AL-Go System files from the Template repository and compare them to the ones in the current repository
 # CheckForUpdates will apply changes to the AL-Go System files based on AL-Go repo settings, such as "runs-on" etc.
@@ -106,7 +110,9 @@ if (-not $isDirectALGo) {
 # - All PowerShell scripts in .AL-Go folders (all projects)
 $checkfiles = @(
     @{ 'dstPath' = Join-Path '.github' 'workflows'; 'srcPath' = Join-Path '.github' 'workflows'; 'pattern' = '*'; 'type' = 'workflow' },
-    @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*.copy.md'; 'type' = 'releasenotes' }
+    @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*.copy.md'; 'type' = 'releasenotes' },
+    @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = 'AL-Go-Settings.json'; 'type' = 'settings' },
+    @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*.settings.json'; 'type' = 'settings' }
 )
 
 # Add template files from RepoSettings, if any
@@ -118,7 +124,10 @@ $projects = @(GetProjectsFromRepository -baseFolder $baseFolder -projectsFromSet
 Write-Host "Projects found: $($projects.Count)"
 foreach($project in $projects) {
     Write-Host "- $project"
-    $checkfiles += @(@{ 'dstPath' = Join-Path $project '.AL-Go'; 'srcPath' = '.AL-Go'; 'pattern' = '*.ps1'; 'type' = 'script' })
+    $checkfiles += @(
+        @{ 'dstPath' = Join-Path $project '.AL-Go'; 'srcPath' = '.AL-Go'; 'pattern' = '*.ps1'; 'type' = 'script' },
+        @{ 'dstPath' = Join-Path $project '.AL-Go'; 'srcPath' = '.AL-Go'; 'pattern' = 'settings.json'; 'type' = 'settings' }
+    )
 }
 
 # $updateFiles will hold an array of files, which needs to be updated
@@ -160,37 +169,49 @@ foreach($checkfile in $checkfiles) {
                 $dstFile = Join-Path $dstFolder $fileName
                 $srcFile = $_.FullName
                 Write-Host "SrcFolder: $srcFolder"
-                if ($type -eq "workflow") {
-                    # for workflow files, we might need to modify the file based on the settings
-                    $srcContent = GetWorkflowContentWithChangesFromSettings -srcFile $srcFile -repoSettings $repoSettings -depth $depth -includeBuildPP $includeBuildPP
-                }
-                else {
-                    # For non-workflow files, just read the file content
-                    $srcContent = Get-ContentLF -Path $srcFile
+
+                $dstFileExists = Test-Path -Path $dstFile -PathType Leaf
+                if ($unusedALGoSystemFiles -contains $fileName) {
+                    # File is not used by AL-Go, remove it if it exists
+                    # do not add it to $updateFiles if it does not exist
+                    if ($dstFileExists) {
+                        Write-Host "Removing $type ($(Join-Path $dstPath $filename)) as it is marked as unused."
+                        $removeFiles += @(Join-Path $dstPath $filename)
+                    }
+                    return
                 }
 
+                switch ($type) {
+                    "workflow" {
+                        # For workflow files, we might need to modify the file based on the settings
+                        $srcContent = GetWorkflowContentWithChangesFromSettings -srcFile $srcFile -repoSettings $repoSettings -depth $depth -includeBuildPP $includeBuildPP
+                     }
+                     "settings" {
+                        # For settings files, we need to modify the file based on the settings
+                        $srcContent = GetModifiedSettingsContent -srcSettingsFile $srcFile -dstSettingsFile $dstFile
+                     }
+                    Default {
+                        # For non-workflow files, just read the file content
+                        $srcContent = Get-ContentLF -Path $srcFile
+                    }
+                }
                 # Replace static placeholders
                 $srcContent = $srcContent.Replace('{TEMPLATEURL}', $templateUrl)
 
                 if ($isDirectALGo) {
-                    # If we are using direct AL-Go repo, we need to change the owner to the remplateOwner, the repo names to AL-Go and AL-Go/Actions and the branch to templateBranch
+                    # If we are using direct AL-Go repo, we need to change the owner to the templateOwner, the repo names to AL-Go and AL-Go/Actions and the branch to templateBranch
                     ReplaceOwnerRepoAndBranch -srcContent ([ref]$srcContent) -templateOwner $templateOwner -templateBranch $templateBranch
                 }
 
-                $dstFileExists = Test-Path -Path $dstFile -PathType Leaf
-                if ($unusedALGoSystemFiles -contains $fileName) {
-                    # file is not used by ALGo, remove it if it exists
-                    # do not add it to $updateFiles if it does not exist
-                    if ($dstFileExists) {
-                        $removeFiles += @(Join-Path $dstPath $filename)
-                    }
-                }
-                elseif ($dstFileExists) {
+                if ($dstFileExists) {
                     # file exists, compare and add to $updateFiles if different
                     $dstContent = Get-ContentLF -Path $dstFile
                     if ($dstContent -cne $srcContent) {
-                        Write-Host "Updated $type ($(Join-Path $dstPath $filename)) available"
+                        Write-Host "Updates in $type ($(Join-Path $dstPath $filename)) available"
                         $updateFiles += @{ "DstFile" = Join-Path $dstPath $filename; "content" = $srcContent }
+                    }
+                    else {
+                        Write-Host "No changes in $type ($(Join-Path $dstPath $filename))"
                     }
                 }
                 else {
@@ -219,12 +240,12 @@ else {
     # $update set, update the files
     try {
         # If a pull request already exists with the same REF, then exit
-        $branchSHA = RunAndCheck git rev-list -n 1 $updateBranch
+        $branchSHA = RunAndCheck git rev-list -n 1 $updateBranch '--'
         $commitMessage = "[$($updateBranch)@$($branchSHA.SubString(0,7))] Update AL-Go System Files from $templateInfo - $($templateSha.SubString(0,7))"
 
         # Get Token with permissions to modify workflows in this repository
-        $writeToken = GetAccessToken -token $token -permissions @{"actions"="read";"contents"="write";"pull_requests"="write";"workflows"="write"}
-        $env:GH_TOKEN = $writeToken
+        $repoWriteToken = GetAccessToken -token $token -permissions @{"actions"="read";"contents"="write";"pull_requests"="write";"workflows"="write"}
+        $env:GH_TOKEN = $repoWriteToken
 
         $existingPullRequest = (gh api --paginate "/repos/$env:GITHUB_REPOSITORY/pulls?base=$updateBranch" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" | ConvertFrom-Json) | Where-Object { $_.title -eq $commitMessage } | Select-Object -First 1
         if ($existingPullRequest) {
@@ -233,11 +254,9 @@ else {
         }
 
         # If $directCommit, then changes are made directly to the default branch
-        $serverUrl, $branch = CloneIntoNewFolder -actor $actor -token $writeToken -updateBranch $updateBranch -DirectCommit $directCommit -newBranchPrefix 'update-al-go-system-files'
+        $serverUrl, $branch = CloneIntoNewFolder -actor $actor -token $repoWriteToken -updateBranch $updateBranch -DirectCommit $directCommit -newBranchPrefix 'update-al-go-system-files'
 
         invoke-git status
-
-        UpdateSettingsFile -settingsFile (Join-Path ".github" "AL-Go-Settings.json") -updateSettings @{ "templateUrl" = $templateUrl; "templateSha" = $templateSha }
 
         # Update the files
         # Calculate the release notes, while updating
@@ -273,6 +292,9 @@ else {
             Write-Host "Remove $_"
             Remove-Item (Join-Path (Get-Location).Path $_) -Force
         }
+
+        # Update the templateUrl and templateSha in the repo settings file
+        UpdateSettingsFile -settingsFile (Join-Path ".github" "AL-Go-Settings.json") -updateSettings @{ "templateUrl" = $templateUrl; "templateSha" = $templateSha }
 
         Write-Host "ReleaseNotes:"
         Write-Host $releaseNotes
