@@ -86,7 +86,7 @@ try {
 
     $appBuild = $settings.appBuild
     $appRevision = $settings.appRevision
-    'licenseFileUrl','codeSignCertificateUrl','*codeSignCertificatePassword','keyVaultCertificateUrl','*keyVaultCertificatePassword','keyVaultClientId','gitHubPackagesContext','applicationInsightsConnectionString' | ForEach-Object {
+    'licenseFileUrl','codeSignCertificateUrl','codeSignCertificatePassword','keyVaultCertificateUrl','*keyVaultCertificatePassword','keyVaultClientId','gitHubPackagesContext','applicationInsightsConnectionString' | ForEach-Object {
         # Secrets might not be read during Pull Request runs
         if ($secrets.Keys -contains $_) {
             $value = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($secrets."$_"))
@@ -108,7 +108,7 @@ try {
         if ($gitHubHostedRunner -and $settings.useCompilerFolder) {
             # If we are running GitHub hosted agents and UseCompilerFolder is set (and we have an artifactUrl), we need to set the artifactCachePath
             $runAlPipelineParams += @{
-                "artifactCachePath" = Join-Path $ENV:GITHUB_WORKSPACE ".artifactcache"
+                "artifactCachePath" = Join-Path $ENV:RUNNER_TEMP ".artifactcache"
             }
             $analyzeRepoParams += @{
                 "doNotCheckArtifactSetting" = $true
@@ -127,11 +127,10 @@ try {
     $buildArtifactFolder = Join-Path $projectPath ".buildartifacts"
     New-Item $buildArtifactFolder -ItemType Directory | Out-Null
 
-    $downloadedAppsByType = @()
     if ($baselineWorkflowSHA -and $baselineWorkflowRunId -ne '0' -and $settings.incrementalBuilds.mode -eq 'modifiedApps') {
         # Incremental builds are enabled and we are only building modified apps
         try {
-            $modifiedFiles = Get-ModifiedFiles -baselineSHA $baselineWorkflowSHA
+            $modifiedFiles = @(Get-ModifiedFiles -baselineSHA $baselineWorkflowSHA)
             OutputMessageAndArray -message "Modified files" -arrayOfStrings $modifiedFiles
             $buildAll = Get-BuildAllApps -baseFolder $baseFolder -project $project -modifiedFiles $modifiedFiles
         }
@@ -142,7 +141,7 @@ try {
         if (!$buildAll) {
             Write-Host "Get unmodified apps from baseline workflow run"
             # Downloaded apps are placed in the build artifacts folder, which is detected by Run-AlPipeline, meaning only non-downloaded apps are built
-            $downloadedAppsByType = Get-UnmodifiedAppsFromBaselineWorkflowRun `
+            Get-UnmodifiedAppsFromBaselineWorkflowRun `
                 -token $token `
                 -settings $settings `
                 -baseFolder $baseFolder `
@@ -251,7 +250,9 @@ try {
             if ($latestRelease) {
                 Write-Host "Using $($latestRelease.name) (tag $($latestRelease.tag_name)) as previous release"
                 $artifactsFolder = Join-Path $baseFolder "artifacts"
-                New-Item $artifactsFolder -ItemType Directory | Out-Null
+                if(-not (Test-Path $artifactsFolder)) {
+                    New-Item $artifactsFolder -ItemType Directory | Out-Null
+                }
                 DownloadRelease -token $token -projects $project -api_url $ENV:GITHUB_API_URL -repository $ENV:GITHUB_REPOSITORY -release $latestRelease -path $artifactsFolder -mask "Apps"
                 $previousApps += @(Get-ChildItem -Path $artifactsFolder | ForEach-Object { $_.FullName })
             }
@@ -378,17 +379,32 @@ try {
         $runAlPipelineParams += @{
             "InstallMissingDependencies" = {
                 Param([Hashtable]$parameters)
-                $parameters.missingDependencies | ForEach-Object {
-                    $appid = $_.Split(':')[0]
-                    $appName = $_.Split(':')[1]
+                foreach($missingDependency in $parameters.missingDependencies) {
+                    $appid = $missingDependency.Split(':')[0]
+                    $appName = $missingDependency.Split(':')[1]
                     $version = $appName.SubString($appName.LastIndexOf('_')+1)
                     $version = [System.Version]$version.SubString(0,$version.Length-4)
+
+                    # If dependency app is already installed, skip it
+                    # If dependency app is already published, synchronize and install it
+                    if ($parameters.ContainsKey('containerName')) {
+                        $appInfo = Get-BcContainerAppInfo -containerName $parameters.containerName -tenantSpecificProperties | Where-Object { $_.AppId -eq $appid }
+                        if ($appInfo) {
+                            # App already exists
+                            if (-not $appInfo.isInstalled) {
+                                Sync-BcContainerApp -containerName $parameters.containerName -tenant $parameters.tenant -appPublisher $appInfo.Publisher -appName $appInfo.Name -appVersion "$($appInfo.version)"
+                                Install-BcContainerApp -containerName $parameters.containerName -tenant $parameters.tenant -appPublisher $appInfo.Publisher -appName $appInfo.Name -appVersion "$($appInfo.version)"
+                            }
+                            continue
+                        }
+                    }
+
                     $publishParams = @{
                         "nuGetServerUrl" = $gitHubPackagesCredential.serverUrl
                         "nuGetToken" = GetAccessToken -token $gitHubPackagesCredential.token -permissions @{"packages"="read";"contents"="read";"metadata"="read"} -repositories @()
                         "packageName" = $appId
                         "version" = $version
-                        "select" = "LatestMatching"
+                        "select" = $settings.nuGetFeedSelectMode
                     }
                     if ($parameters.ContainsKey('CopyInstalledAppsToFolder')) {
                         $publishParams += @{
@@ -450,14 +466,6 @@ try {
         $runAlPipelineParams["preprocessorsymbols"] = @()
     }
 
-    # DEPRECATION: REMOVE AFTER April 1st 2025 --->
-    if ($buildMode -eq 'Clean' -and $settings.ContainsKey('cleanModePreprocessorSymbols')) {
-        Write-Host "Adding Preprocessor symbols : $($settings.cleanModePreprocessorSymbols -join ',')"
-        $runAlPipelineParams["preprocessorsymbols"] += $settings.cleanModePreprocessorSymbols
-        Trace-DeprecationWarning -Message "cleanModePreprocessorSymbols is deprecated" -DeprecationTag "cleanModePreprocessorSymbols"
-    }
-    # <--- REMOVE AFTER April 1st 2025
-
     if ($settings.ContainsKey('preprocessorSymbols')) {
         Write-Host "Adding Preprocessor symbols : $($settings.preprocessorSymbols -join ',')"
         $runAlPipelineParams["preprocessorsymbols"] += $settings.preprocessorSymbols
@@ -509,28 +517,6 @@ try {
         -appBuild $appBuild -appRevision $appRevision `
         -uninstallRemovedApps
 
-    # If any apps were downloaded as part of incremental builds in a pr, we should remove them again after the build to prevent them from being included in artifacts
-    if ($ENV:GITHUB_EVENT_NAME -like 'pull_request*' -and $downloadedAppsByType) {
-        $downloadedAppsByType | ForEach-Object {
-            if ($_.downloadedApps) {
-                $mask = $_.mask
-                $thisArtifactFolder = Join-Path $buildArtifactFolder $mask
-                Write-Host "Removing pre-built apps from $thisArtifactFolder"
-                foreach($downloadedApp in $_.downloadedApps) {
-                    $thisApp = Join-Path $thisArtifactFolder $downloadedApp
-                    try {
-                        if (Test-Path $thisApp) {
-                            Remove-Item $thisApp
-                        }
-                        Write-Host "Removed pre-built app: $thisApp"
-                    } catch {
-                        Write-Host "Failed to remove pre-built app: $thisApp"
-                    }
-                }
-            }
-        }
-    }
-
     if ($containerBaseFolder) {
         Write-Host "Copy artifacts and build output back from build container"
         $destFolder = Join-Path $ENV:GITHUB_WORKSPACE $project
@@ -541,6 +527,16 @@ try {
         Copy-Item -Path $buildOutputFile -Destination $destFolder -Force -ErrorAction SilentlyContinue
         Copy-Item -Path $containerEventLogFile -Destination $destFolder -Force -ErrorAction SilentlyContinue
     }
+
+    # check for new warnings
+    Import-Module (Join-Path $PSScriptRoot ".\CheckForWarningsUtils.psm1" -Resolve) -DisableNameChecking
+
+    Test-ForNewWarnings -token $token `
+        -project $project `
+        -settings $settings `
+        -buildMode $buildMode `
+        -baselineWorkflowRunId $baselineWorkflowRunId `
+        -prBuildOutputFile $buildOutputFile
 }
 catch {
     throw

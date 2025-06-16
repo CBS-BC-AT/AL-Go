@@ -60,57 +60,67 @@ function InvokeWebRequest {
         [string] $method,
         [string] $body,
         [string] $outFile,
-        [string] $uri,
-        [switch] $retry
+        [string] $uri
     )
 
-    try {
-        $params = @{ "UseBasicParsing" = $true }
-        if ($headers) {
-            $params += @{ "headers" = $headers }
-        }
-        if ($method) {
-            $params += @{ "method" = $method }
-        }
-        if ($body) {
-            $params += @{ "body" = $body }
-        }
-        if ($outfile) {
-            $params += @{ "outfile" = $outfile }
-        }
+    $params = @{ "UseBasicParsing" = $true }
+    if ($headers) {
+        $params += @{ "headers" = $headers }
+    }
+    if ($method) {
+        $params += @{ "method" = $method }
+    }
+    if ($body) {
+        $params += @{ "body" = $body }
+    }
+    if ($outfile) {
+        $params += @{ "outfile" = $outfile }
+    }
+    while ($true) {
         try {
             $result = Invoke-WebRequest  @params -Uri $uri
+            break
         }
         catch [System.Net.WebException] {
             $response = $_.Exception.Response
             $responseUri = $response.ResponseUri.AbsoluteUri
             if ($response.StatusCode -eq 404 -and $responseUri -ne $uri) {
                 Write-Host "::Warning::Repository ($uri) was renamed or moved, please update your references with the new name. Trying $responseUri, as suggested by GitHub."
-                $result = Invoke-WebRequest @params -Uri $responseUri
+                $uri = $responseUri
+                continue
             }
-            else {
-                throw
+            if ($response.StatusCode -eq 403) {
+                $remaining = $response.Headers["X-RateLimit-Remaining"]
+                if ($remaining -le 0) {
+                    $resetTime = [int64]$response.Headers["X-RateLimit-Reset"]  # Unix timestamp in seconds
+                    $resetTimestamp = [DateTimeOffset]::FromUnixTimeSeconds($resetTime).ToLocalTime()
+                    $waitSeconds = ($resetTimestamp - (Get-Date)).TotalSeconds
+                    if ($waitSeconds -gt 0) {
+                        Write-Host "Rate limit exceeded, waiting $waitSeconds seconds for limits to reset"
+                        Start-Sleep -seconds $waitSeconds
+                    }
+                    continue
+                }
             }
+            if ($response.StatusCode -eq 401) {
+                if ($params.ContainsKey('Headers') -and $params.Headers.ContainsKey('Authorization')) {
+                    $publicResponse = Invoke-WebRequest -Method Head -Uri $uri -ErrorAction SilentlyContinue
+                    if ($publicResponse -and $publicResponse.StatusCode -eq 200) {
+                        Write-Host "Authenticated access to repository ($uri) was not permitted, retrying with un-authenticated access since the repository is public"
+                        $params.Headers.Remove('Authorization')
+                        continue
+                    }
+                }
+            }
+            $message = GetExtendedErrorMessage -errorRecord $_
         }
-        $result
-    }
-    catch {
-        $message = GetExtendedErrorMessage -errorRecord $_
-        if ($retry) {
-            Write-Host $message
-            Write-Host "...retrying in 1 minute"
-            Start-Sleep -Seconds 60
-            try {
-                Invoke-WebRequest  @params -Uri $uri
-                return
-            }
-            catch {
-                Write-Host "Retry failed as well"
-            }
+        catch {
+            $message = GetExtendedErrorMessage -errorRecord $_
         }
-        Write-Host $message
+        Write-Host -ForegroundColor Red $message
         throw $message
     }
+    $result
 }
 
 function GetDependencies {
@@ -170,9 +180,9 @@ function GetDependencies {
                 }
             }
             $projects = $dependency.projects
-            $repository = ([uri]$dependency.repo).AbsolutePath.Replace(".git", "").TrimStart("/")
+            $repository = ([uri]$dependency.repo).AbsolutePath.Replace(".git", "").TrimStart("/").TrimEnd("/")
             if ($dependency.release_status -eq "latestBuild") {
-                $token = GetAccessToken -token $dependency.authTokenSecret -repository $repository -permissions @{"contents"="read";"metadata"="read"}
+                $token = GetAccessToken -token $dependency.authTokenSecret -repository $repository -permissions @{"contents"="read";"actions"="read";"metadata"="read"}
                 $artifacts = GetArtifacts -token $token -api_url $api_url -repository $repository -mask $mask -projects $projects -version $dependency.version -branch $dependency.branch -baselineWorkflowID $dependency.baselineWorkflowID
                 if ($artifacts) {
                     $artifacts | ForEach-Object {
@@ -309,12 +319,12 @@ function CmdDo {
 
 function invoke-gh {
     Param(
-        [parameter(mandatory = $false, ValueFromPipeline = $true)]
+        [parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [string] $inputStr = "",
         [switch] $silent,
         [switch] $returnValue,
-        [parameter(mandatory = $true, position = 0)][string] $command,
-        [parameter(mandatory = $false, position = 1, ValueFromRemainingArguments = $true)] $remaining
+        [parameter(Mandatory = $true, position = 0)][string] $command,
+        [parameter(Mandatory = $false, position = 1, ValueFromRemainingArguments = $true)] $remaining
     )
 
     Process {
@@ -336,12 +346,12 @@ function invoke-gh {
 
 function invoke-git {
     Param(
-        [parameter(mandatory = $false, ValueFromPipeline = $true)]
+        [parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [string] $inputStr = "",
         [switch] $silent,
         [switch] $returnValue,
-        [parameter(mandatory = $true, position = 0)][string] $command,
-        [parameter(mandatory = $false, position = 1, ValueFromRemainingArguments = $true)] $remaining
+        [parameter(Mandatory = $true, position = 0)][string] $command,
+        [parameter(Mandatory = $false, position = 1, ValueFromRemainingArguments = $true)] $remaining
     )
 
     Process {
@@ -496,6 +506,40 @@ function SemVerStrToSemVerObj {
     }
 }
 
+# Compare SemVerStr1 and SemVerStr2
+# Returns -1 if SemVerStr1 < SemVerStrj2
+# Returns 1 if SemVerStr1 > SemVerStr2
+# Returns 0 if SemVerStr1 = SemVerStr2
+function CompareSemVerStrs {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string] $semVerStr1,
+        [Parameter(Mandatory = $true)]
+        [string] $semVerStr2
+    )
+
+    Process {
+        $semVerObj1 = $semVerStr1 | SemVerStrToSemVerObj
+        $semVerObj2 = $semVerStr2 | SemVerStrToSemVerObj
+        $result = $semVerObj1.Major.CompareTo($semVerObj2.Major)
+        if ($result -eq 0) {
+            $result = $semVerObj1.Minor.CompareTo($semVerObj2.Minor)
+            if ($result -eq 0) {
+                $result = $semVerObj1.Patch.CompareTo($semVerObj2.Patch)
+                if ($result -eq 0) {
+                    for ($i=0; $i -lt 5; $i++) {
+                        $result = ("$($semVerObj1."Addt$i")".CompareTo("$($semVerObj2."Addt$i")"))
+                        if ($result -ne 0) {
+                            return $result
+                        }
+                    }
+                }
+            }
+        }
+        return $result
+    }
+}
+
 function GetReleases {
     Param(
         [string] $token,
@@ -632,16 +676,18 @@ function WaitForRateLimit {
         [switch] $displayStatus
     )
 
-    $rate = ((InvokeWebRequest -Headers $headers -Uri "https://api.github.com/rate_limit" -retry).Content | ConvertFrom-Json).rate
+    $rate = ((InvokeWebRequest -Headers $headers -Uri "https://api.github.com/rate_limit").Content | ConvertFrom-Json).rate
     $percentRemaining = [int]($rate.remaining*100/$rate.limit)
     if ($displayStatus) {
         Write-Host "$($rate.remaining) API calls remaining out of $($rate.limit) ($percentRemaining%)"
     }
     if ($percentRemaining-lt $percentage) {
-        $resetTimeStamp = ([datetime] '1970-01-01Z').AddSeconds($rate.reset)
-        $waitTime = $resetTimeStamp.Subtract([datetime]::Now)
-        Write-Host "`nLess than 10% API calls left, waiting for $($waitTime.TotalSeconds) seconds for limits to reset."
-        Start-Sleep -seconds ($waitTime.TotalSeconds+1)
+        $resetTimestamp = [DateTimeOffset]::FromUnixTimeSeconds($rate.reset).ToLocalTime()
+        $waitSeconds = ($resetTimestamp - (Get-Date)).TotalSeconds
+        if ($waitSeconds -gt 0) {
+            Write-Host "`nLess than 10% API calls left, waiting for $waitSeconds seconds for limits to reset."
+            Start-Sleep -seconds $waitSeconds
+        }
     }
 }
 
@@ -725,7 +771,7 @@ function DownloadRelease {
 # No empty line at the end of the file
 function Get-ContentLF {
     Param(
-        [parameter(mandatory = $true, ValueFromPipeline = $false)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $false)]
         [string] $path
     )
 
@@ -739,9 +785,9 @@ function Get-ContentLF {
 # This function forces UTF8 encoding and LF line endings
 function Set-ContentLF {
     Param(
-        [parameter(mandatory = $true, ValueFromPipeline = $false)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $false)]
         [string] $path,
-        [parameter(mandatory = $true, ValueFromPipeline = $true)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
         $content
     )
 
@@ -769,25 +815,49 @@ function Set-ContentLF {
 # }
 function Set-JsonContentLF {
     Param(
-        [parameter(mandatory = $true, ValueFromPipeline = $false)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $false)]
         [string] $path,
-        [parameter(mandatory = $true, ValueFromPipeline = $true)]
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [object] $object
     )
 
     Process {
-        $object | ConvertTo-Json -Depth 99 | Set-ContentLF -path $path
+        $object | ConvertTo-JsonLF | Set-ContentLF -path $path
+    }
+}
+
+ <#
+    .SYNOPSIS
+        Converts a JSON string to a JSON object with LF line endings.
+    .DESCRIPTION
+        Converts a JSON string to a JSON object with LF line endings.
+        This ensures the same formatting in different PowerShell versions.
+    .PARAMETER object
+        The JSON object to convert.
+    .EXAMPLE
+        $json = ConvertTo-JsonLF -object $myObject
+ #>
+function ConvertTo-JsonLF {
+    Param(
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [object] $object
+    )
+
+    Process {
+        $content = $object | ConvertTo-Json -Depth 99
         if ($PSVersionTable.PSVersion.Major -lt 6) {
             try {
-                $path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
-                # This command will reformat a JSON file with LF line endings as PowerShell 7 would do it (when run using pwsh)
-                $command = "`$cr=[char]13;`$lf=[char]10;`$path='$path';`$content=Get-Content `$path -Encoding UTF8|ConvertFrom-Json|ConvertTo-Json -Depth 99;`$content=`$content -replace `$cr,'';`$content|Out-Host;[System.IO.File]::WriteAllText(`$path,`$content+`$lf)"
-                . pwsh -command $command
+                # This command will reformat a JSON content with LF line endings as PowerShell 7 would do it (when run using pwsh)
+                $command = [scriptblock] {
+                    $args[0] | ConvertFrom-Json | ConvertTo-Json -Depth 99
+                }
+                $content = pwsh -Command $command -args ($object | ConvertTo-Json -Depth 99 -Compress)
             }
             catch {
-                Write-Host "WARNING: pwsh (PowerShell 7) not installed, json will be formatted by PowerShell $($PSVersionTable.PSVersion)"
+                Write-Host "WARNING: pwsh (PowerShell 7) not installed, JSON will be formatted by PowerShell $($PSVersionTable.PSVersion)"
             }
         }
+        return $content.Replace("`r", "")
     }
 }
 
@@ -931,7 +1001,9 @@ function GetArtifactsFromWorkflowRun {
         [Parameter(Mandatory = $true)]
         [string] $mask,
         [Parameter(Mandatory = $true)]
-        [string] $projects
+        [string] $projects,
+        [Parameter(Mandatory = $false)]
+        [ref] $expiredArtifacts
     )
 
     Write-Host "Getting artifacts for workflow run $workflowRun, mask $mask, projects $projects and version $version"
@@ -970,6 +1042,9 @@ function GetArtifactsFromWorkflowRun {
 
                 if($artifact.expired) {
                     Write-Host "Artifact $($artifact.name) (ID: $($artifact.id)) expired on $($artifact.expired_at)"
+                    if ($expiredArtifacts) {
+                        $expiredArtifacts.value += $artifact
+                    }
                     continue
                 }
 

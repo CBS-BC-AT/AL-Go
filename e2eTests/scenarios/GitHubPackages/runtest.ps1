@@ -1,15 +1,19 @@
 ﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidGlobalVars', '', Justification = 'Global vars used for local test execution only.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification = 'All scenario tests have equal parameter set.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPlainTextForPassword', '', Justification = 'Secrets are transferred as plain text.')]
 Param(
     [switch] $github,
     [switch] $linux,
     [string] $githubOwner = $global:E2EgithubOwner,
     [string] $repoName = [System.IO.Path]::GetFileNameWithoutExtension([System.IO.Path]::GetTempFileName()),
-    [string] $e2epat = ($Global:SecureE2EPAT | Get-PlainText),
-    [string] $algoauthapp = ($Global:SecureALGOAUTHAPP | Get-PlainText),
+    [string] $e2eAppId,
+    [string] $e2eAppKey,
+    [string] $algoauthapp = ($global:SecureALGOAUTHAPP | Get-PlainText),
     [string] $pteTemplate = $global:pteTemplate,
     [string] $appSourceTemplate = $global:appSourceTemplate,
-    [string] $adminCenterApiToken = ($global:SecureAdminCenterApiToken | Get-PlainText)
+    [string] $adminCenterApiCredentials = ($global:SecureadminCenterApiCredentials | Get-PlainText),
+    [string] $azureCredentials = ($global:SecureAzureCredentials | Get-PlainText),
+    [string] $githubPackagesToken = ($global:SecureGitHubPackagesToken | Get-PlainText)
 )
 
 Write-Host -ForegroundColor Yellow @'
@@ -58,13 +62,15 @@ $branch = "main"
 $template = "https://github.com/$pteTemplate"
 
 # Login
-SetTokenAndRepository -github:$github -githubOwner $githubOwner -token $e2epat -repository $repository
+SetTokenAndRepository -github:$github -githubOwner $githubOwner -appId $e2eAppId -appKey $e2eAppKey -repository $repository
 
 $repository1 = "$repository.1"
 $repository2 = "$repository.2"
+# TODO: PAT is still needed here as GitHub packages only supports authentication using classic PATs
+# https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages#about-scopes-and-permissions-for-package-registries
 $githubPackagesContext = @{
     "serverUrl"="https://nuget.pkg.github.com/$($githubOwner.ToLowerInvariant())/index.json"
-    "token"=$e2epat
+    "token"=$githubPackagesToken
 }
 $githubPackagesContextJson = ($githubPackagesContext | ConvertTo-Json -Compress)
 
@@ -111,7 +117,7 @@ CreateAlGoRepository `
     -contentScript {
         Param([string] $path)
         $script:id5 = CreateNewAppInFolder -folder $path -name app5 -objID 50005 -dependencies @( @{ "id" = $script:id4; "name" = "app4"; "publisher" = (GetDefaultPublisher); "version" = "1.0.0.0" }; @{ "id" = $script:id3; "name" = "app3"; "publisher" = (GetDefaultPublisher); "version" = "1.0.0.0" } )
-        Add-PropertiesToJsonFile -path (Join-Path $path '.AL-Go\settings.json') -properties @{ "country" = "dk" }
+        Add-PropertiesToJsonFile -path (Join-Path $path '.AL-Go\settings.json') -properties @{ "country" = "dk"; "nuGetFeedSelectMode" = "EarliestMatching" }
     }
 SetRepositorySecret -repository $repository -name 'GitHubPackagesContext' -value $githubPackagesContextJson
 $repoPath = (Get-Location).Path
@@ -120,7 +126,7 @@ $repoPath = (Get-Location).Path
 Set-Location $repoPath1
 WaitWorkflow -repository $repository1 -runid $run1.id
 
-# Run a second time with wait (due to GitHubPackages error with our organization?)
+# Run a second time with wait (to have at least two versions in the feed 1.0.2 and 1.0.3 - RUN_NUMBER 1 was initial commit)
 $run1 = RunCICD -repository $repository1 -branch $branch -wait
 
 # test artifacts generated in repository1
@@ -142,6 +148,9 @@ $run = RunCICD -repository $repository -branch $branch -wait
 
 # test artifacts generated in main repo
 Test-ArtifactsFromRun -runid $run.id -folder 'artifacts' -expectedArtifacts @{"Apps"=1;"TestApps"=0;"Dependencies"=4} -repoVersion '1.0' -appVersion '1.0'
+
+# Check that the dependencies are version 1.0.2.0 due to the nuGetFeedSelectMode = EarliestMatching
+(Get-ChildItem -Path 'artifacts/*-main-Dependencies-*/*_1.0.2.0.app').Count | Should -Be 4 -Because "There should be 4 dependencies with version 1.0.2.0 due to the nuGetFeedSelectMode = EarliestMatching"
 
 Set-Location $prevLocation
 
