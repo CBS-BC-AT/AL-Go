@@ -363,7 +363,9 @@ jobs:
           echo "NO_CHANGES=$no_changes" >> $GITHUB_ENV
           {
             echo "PICKED_COMMITS<<EOF"
-            echo "${successful_commits[*]}"
+            for commit in "${successful_commits[@]}"; do
+              printf "%s\n" "$commit"
+            done
             echo "EOF"
           } >> $GITHUB_ENV
 
