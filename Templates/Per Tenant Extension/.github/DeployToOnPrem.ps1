@@ -19,7 +19,7 @@ function Get-DefaultParams() {
         navAdminToolPath     = "" # Path to the NavAdminTool.ps1
         navVersion           = "" # Version string of the Business Central server to deploy to.
         navVersionFolder     = "*" # Name of the folder leading to the system files of the Business Central server. If given without NavAdminToolPath, NavAdminToolPath will be set to "C:\Program Files\Microsoft Dynamics 365 Business Central\$NavVersionFolder\Service\NavAdminTool.ps1".
-        scriptVersion        = "v0.2.18" # Version of the deployment script to download.
+        scriptVersion        = "v0.3.0" # Version of the deployment script to download.
         dryRun               = $false # If true, the update script won't write any changes to the environment.
     }
     return $defaultParams
