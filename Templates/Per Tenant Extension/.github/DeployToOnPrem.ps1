@@ -136,8 +136,8 @@ $reqScripts = @{
         ScriptPath = "app/Update-NAVApp.ps1"
         Description = "deployment script"
     }
-    GetNAVAppUninstall = @{
-        ScriptPath = "app/Get-NAVAppUninstall.ps1"
+    GetNAVAppUninstallList = @{
+        ScriptPath = "app/Get-NAVAppUninstallList.ps1"
         Description = "app management script"
     }
     UninstallNAVAppList = @{
@@ -190,6 +190,8 @@ $deployAppParams = @{
     SyncMode = $SyncMode
     installedApps = $null
     DryRun = $dryRun
+    getAppsScriptPath = $GetNAVAppUninstallList
+    uninstallScriptPath = $UninstallNAVAppList
 }
 
 # Deploy each app
