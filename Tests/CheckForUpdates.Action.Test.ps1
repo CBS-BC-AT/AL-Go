@@ -154,7 +154,7 @@ Describe "CheckForUpdates Action Tests" {
         CompareKeysAndValues $checkFiles1[0] @{ 'srcPath' = 'scripts'; 'dstPath' = 'scripts'; 'pattern' = '*.ps1'; 'type' = 'custom' }
         CompareKeysAndValues $checkFiles1[1] @{ 'dstPath' = '.'; 'srcPath' = '.'; 'pattern' = 'pre-commit-config.yaml'; 'type' = 'custom' }
         CompareKeysAndValues $checkFiles1[2] @{ 'dstPath' = '.github'; 'srcPath' = '.github'; 'pattern' = '*'; 'type' = 'custom' }
-        CompareKeysAndValues $checkFiles1[3] @{ 'dstPath' = 'docs\*'; 'srcPath' = 'docs\*'; 'pattern' = '*'; 'type' = 'custom' }
+        CompareKeysAndValues $checkFiles1[3] @{ 'dstPath' = 'docs/*'; 'srcPath' = 'docs/*'; 'pattern' = '*'; 'type' = 'custom' }
         CompareKeysAndValues $checkFiles1[4] @{ 'dstPath' = ''; 'srcPath' = ''; 'pattern' = '*'; 'type' = 'custom' }
         CompareKeysAndValues $checkFiles1[5] @{ 'dstPath' = '.vscode'; 'srcPath' = '.vscode'; 'pattern' = '*'; 'type' = 'custom' }
 
