@@ -19,7 +19,7 @@
         "projects": {
             "type": "array",
             "items": {
-                "type": "string"
+                "type": "object"
             },
             "description": "An array of AL-Go projects. See https://aka.ms/ALGoSettings#projects"
         },
