@@ -10,9 +10,9 @@ inputs:
     required: false
     default: ${{ github.actor }}
   token:
-    description: Base64 encoded GhTokenWorkflow secret
+    description: The GitHub token running the action
     required: false
-    default: ''
+    default: ${{ github.token }}
   templateUrl:
     description: URL of the template repository (default is the template repository used to create the repository)
     required: false

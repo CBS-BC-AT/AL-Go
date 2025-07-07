@@ -15,8 +15,6 @@ permissions:
   actions: read
   contents: read
   id-token: write
-  pull-requests: read
-  checks: read
 
 defaults:
   run:

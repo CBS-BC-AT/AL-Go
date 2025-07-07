@@ -67,9 +67,8 @@ function RefreshToken {
             throw "Token not set."
         }
 
-        # Check if the last token refresh was more than 10 minutes ago
-
-        if ((-not $force) -and ($script:lastTokenRefresh -ne 0) -and (([DateTime]::Now - $script:lastTokenRefresh).TotalMinutes -lt 10)) {
+        # Check if the last token refresh was more than 30 minutes ago
+        if ((-not $force) -and ($script:lastTokenRefresh -ne 0) -and (([DateTime]::Now - $script:lastTokenRefresh).TotalMinutes -lt 30)) {
             return
         }
 
@@ -279,11 +278,14 @@ function WaitWorkflow {
     if (!$repository) {
         $repository = $defaultRepository
     }
+    $count = 0
     $status = ""
     do {
         RefreshToken -repository $repository
-        $headers = GetHeaders -token $ENV:GH_TOKEN -repository $repository
-
+        if ($count % 45 -eq 0) {
+            $headers = GetHeaders -token $ENV:GH_TOKEN -repository $repository
+            $count++
+        }
         if ($delay) {
             Start-Sleep -Seconds 60
         }

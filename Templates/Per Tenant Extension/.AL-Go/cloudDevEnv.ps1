@@ -15,23 +15,14 @@ $errorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"; Set-S
 function DownloadHelperFile {
     param(
         [string] $url,
-        [string] $folder,
-        [switch] $notifyAuthenticatedAttempt
+        [string] $folder
     )
 
     $prevProgressPreference = $ProgressPreference; $ProgressPreference = 'SilentlyContinue'
     $name = [System.IO.Path]::GetFileName($url)
     Write-Host "Downloading $name from $url"
     $path = Join-Path $folder $name
-    try {
-        Invoke-WebRequest -UseBasicParsing -uri $url -OutFile $path
-    }
-    catch {
-        if ($notifyAuthenticatedAttempt) {
-            Write-Host -ForegroundColor Red "Failed to download $name, trying authenticated download"
-        }
-        Invoke-WebRequest -UseBasicParsing -uri $url -OutFile $path -Headers @{ "Authorization" = "token $(gh auth token)" }
-    }
+    Invoke-WebRequest -UseBasicParsing -uri $url -OutFile $path
     $ProgressPreference = $prevProgressPreference
     return $path
 }
@@ -51,7 +42,7 @@ Write-Host -ForegroundColor Yellow @'
 
 $tmpFolder = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString())"
 New-Item -Path $tmpFolder -ItemType Directory -Force | Out-Null
-$GitHubHelperPath = DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/Github-Helper.psm1' -folder $tmpFolder -notifyAuthenticatedAttempt
+$GitHubHelperPath = DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/Github-Helper.psm1' -folder $tmpFolder
 $ALGoHelperPath = DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/AL-Go-Helper.ps1' -folder $tmpFolder
 DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/settings.schema.json' -folder $tmpFolder | Out-Null
 DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/Packages.json' -folder $tmpFolder | Out-Null
