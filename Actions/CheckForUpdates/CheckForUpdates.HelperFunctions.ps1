@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
 Downloads a template repository and returns the path to the downloaded folder
-.PARAMETER token
-The GitHub token / PAT to use for authentication (if the template repository is private/internal)
+.PARAMETER headers
+The headers to use when calling the GitHub API
 .PARAMETER templateUrl
 The URL to the template repository
 .PARAMETER templateSha
@@ -12,30 +12,11 @@ If true, the latest SHA of the template repository will be downloaded
 #>
 function DownloadTemplateRepository {
     Param(
-        [string] $token,
+        [hashtable] $headers,
         [string] $templateUrl,
         [ref] $templateSha,
         [bool] $downloadLatest
     )
-
-    $templateRepositoryUrl = $templateUrl.Split('@')[0]
-    $templateRepository = $templateRepositoryUrl.Split('/')[-2..-1] -join '/'
-
-    # Use Authenticated API request if possible to avoid the 60 API calls per hour limit
-    $headers = GetHeaders -token $env:GITHUB_TOKEN -repository $templateRepository
-    try {
-        $response = Invoke-WebRequest -Headers $headers -Method Head -Uri $templateRepositoryUrl
-    }
-    catch {
-        # Ignore error
-        $response = $null
-    }
-    if (-not $response -or $response.StatusCode -ne 200) {
-        # GITHUB_TOKEN doesn't have access to template repository, must be private/internal
-        # Get token with read permissions for the template repository
-        # NOTE that the GitHub app needs to be installed in the template repository for this to work
-        $headers = GetHeaders -token $token -repository $templateRepository
-    }
 
     # Construct API URL
     $apiUrl = $templateUrl.Split('@')[0] -replace "^(https:\/\/github\.com\/)(.*)$", "$ENV:GITHUB_API_URL/repos/`$2"
@@ -446,7 +427,7 @@ function IsDirectALGo {
 
 function GetSrcFolder {
     Param(
-        [string] $repoType,
+        [hashtable] $repoSettings,
         [string] $templateUrl,
         [string] $templateFolder,
         [string] $srcPath
@@ -458,7 +439,7 @@ function GetSrcFolder {
         return ''
     }
     if (IsDirectALGo -templateUrl $templateUrl) {
-        switch ($repoType) {
+        switch ($repoSettings.type) {
             "PTE" {
                 $typePath = "Per Tenant Extension"
             }
@@ -505,15 +486,14 @@ function GetModifiedSettingsContent {
     else {
         # Change the $schema property to be the same as the source settings file (add it if it doesn't exist)
         $schemaKey = '$schema'
-        if ($srcSettings.PSObject.Properties.Name -eq $schemaKey) {
-            $schemaValue = $srcSettings."$schemaKey"
+        $schemaValue = $srcSettings."$schemaKey"
 
-            $dstSettings | Add-Member -MemberType NoteProperty -Name "$schemaKey" -Value $schemaValue -Force
+        $dstSettings | Add-Member -MemberType NoteProperty -Name "$schemaKey" -Value $schemaValue -Force
 
-            # Make sure the $schema property is the first property in the object
-            $dstSettings = $dstSettings | Select-Object @{ Name = '$schema'; Expression = { $_.'$schema' } }, * -ExcludeProperty '$schema'
-        }
+        # Make sure the $schema property is the first property in the object
+        $dstSettings = $dstSettings | Select-Object @{ Name = '$schema'; Expression = { $_.'$schema' } }, * -ExcludeProperty '$schema'
     }
+
 
     return $dstSettings | ConvertTo-JsonLF
 }
@@ -521,29 +501,24 @@ function GetModifiedSettingsContent {
 function UpdateSettingsFile {
     Param(
         [string] $settingsFile,
-        [hashtable] $updateSettings
+        [hashtable] $updateSettings,
+        [hashtable] $additionalSettings = @{}
     )
 
-    $modified = $false
     # Update Repo Settings file with the template URL
     if (Test-Path $settingsFile) {
         $settings = Get-Content $settingsFile -Encoding UTF8 | ConvertFrom-Json
     }
     else {
         $settings = [PSCustomObject]@{}
-        $modified = $true
     }
     foreach($key in $updateSettings.Keys) {
         if ($settings.PSObject.Properties.Name -eq $key) {
-            if ($settings."$key" -ne $updateSettings."$key") {
-                $settings."$key" = $updateSettings."$key"
-                $modified = $true
-            }
+            $settings."$key" = $updateSettings."$key"
         }
         else {
             # Add the property if it doesn't exist
             $settings | Add-Member -MemberType NoteProperty -Name "$key" -Value $updateSettings."$key"
-            $modified = $true
         }
     }
     # Grab settings from additionalSettings if they are not already in settings
@@ -553,11 +528,8 @@ function UpdateSettingsFile {
             $settings | Add-Member -MemberType NoteProperty -Name "$key" -Value $additionalSettings."$key"
         }
     }
-    if ($modified) {
-        # Save the file with LF line endings and UTF8 encoding
-        $settings | Set-JsonContentLF -path $settingsFile
-    }
-    return $modified
+    # Save the file with LF line endings and UTF8 encoding
+    $settings | Set-JsonContentLF -path $settingsFile
 }
 
 function GetCheckFileFromString() {

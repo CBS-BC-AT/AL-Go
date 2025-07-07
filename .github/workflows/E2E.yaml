@@ -35,7 +35,7 @@ on:
         default: 'preview'
 
 env:
-  TestUpgradesFromVersion: 'v5.0'
+  TestUpgradesFromVersion: 'v3.1'
 
 defaults:
   run:
@@ -52,8 +52,7 @@ jobs:
       githubOwner: ${{ steps.check.outputs.githubOwner }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -114,8 +113,7 @@ jobs:
       appSourceAppRepo: ${{ steps.setup.outputs.appSourceAppRepo }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -149,8 +147,7 @@ jobs:
       scenarios: ${{ steps.Analyze.outputs.scenarios }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -239,8 +236,7 @@ jobs:
     strategy: ${{ fromJson(needs.Analyze.outputs.scenarios) }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -276,8 +272,7 @@ jobs:
     strategy: ${{ fromJson(needs.Analyze.outputs.scenarios) }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -313,8 +308,7 @@ jobs:
     strategy: ${{ fromJson(needs.Analyze.outputs.publictestruns) }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -362,8 +356,7 @@ jobs:
     strategy: ${{ fromJson(needs.Analyze.outputs.privatetestruns) }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
@@ -411,8 +404,7 @@ jobs:
     strategy: ${{ fromJson(needs.Analyze.outputs.releases) }}
     steps:
       - name: Harden Runner
-        if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
         with:
           egress-policy: audit
 
