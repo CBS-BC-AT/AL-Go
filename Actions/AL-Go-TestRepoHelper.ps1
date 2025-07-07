@@ -1,6 +1,4 @@
-﻿. (Join-Path $PSScriptRoot "AL-Go-Helper.ps1")
-
-function Test-Property {
+﻿function Test-Property {
     Param(
         [HashTable] $json,
         [string] $settingsDescription,
@@ -171,15 +169,12 @@ function TestALGoRepository {
     # Test .json files are formatted correctly
     # Get-ChildItem needs -force to include folders starting with . (e.x. .github / .AL-Go) on Linux
     Get-ChildItem -Path $baseFolder -Filter '*.json' -Recurse -Force | ForEach-Object {
-        if ($_.Directory.Name -eq ([System.IO.Path]::GetDirectoryName($ALGoSettingsFile)) -and $_.Name -eq ([System.IO.Path]::GetFileName($ALGoSettingsFile))) {
+        if ($_.Directory.Name -eq '.AL-Go' -and $_.BaseName -eq 'settings') {
             Test-JsonFile -jsonFile $_.FullName -baseFolder $baseFolder -type 'Project'
         }
-        elseif ($_.Directory.Name -eq ([System.IO.Path]::GetDirectoryName($RepoSettingsFile)) -and $_.BaseName -like '*ettings') {
-            if ($_.Name -eq ([System.IO.Path]::GetFileName($RepoSettingsFile)) -or $_.Name -eq ([System.IO.Path]::GetFileName($CustomTemplateRepoSettingsFile))) {
+        elseif ($_.Directory.Name -eq '.github' -and $_.BaseName -like '*ettings') {
+            if ($_.BaseName -eq 'AL-Go-Settings') {
                 $type = 'Repo'
-            }
-            elseif ($_.Name -eq ([System.IO.Path]::GetFileName($CustomTemplateProjectSettingsFile))) {
-                $type = 'Project'
             }
             else {
                 $type = 'Workflow'
