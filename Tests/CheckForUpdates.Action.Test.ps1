@@ -8,7 +8,6 @@ Describe "CheckForUpdates Action Tests" {
         $scriptRoot = Join-Path $PSScriptRoot "..\Actions\$actionName" -Resolve
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'actionScript', Justification = 'False positive.')]
         $actionScript = GetActionScript -scriptRoot $scriptRoot -scriptName "$actionName.ps1"
-        $helperScriptPath = Join-Path $scriptRoot "$actionName.HelperFunctions.ps1"
     }
 
     It 'Compile Action' {
