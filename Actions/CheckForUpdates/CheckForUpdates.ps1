@@ -138,6 +138,9 @@ if ($originalTemplateFolder) {
     )
 }
 
+# Add template files from RepoSettings, if any
+$checkFiles += GetCustomTemplateFiles -repoSettings $repoSettings
+
 # Get the list of projects in the current repository
 $baseFolder = $ENV:GITHUB_WORKSPACE
 $projects = @(GetProjectsFromRepository -baseFolder $baseFolder -projectsFromSettings $repoSettings.projects)
@@ -179,6 +182,10 @@ foreach($checkfile in $checkfiles) {
         $originalSrcFolder = GetSrcFolder -repoType $repoSettings.type -templateUrl $originalTemplateUrl -templateFolder $originalTemplateFolder -srcPath $srcPath
     }
     if ($srcFolder) {
+        if ($type -eq "custom" -and -not (Test-Path -Path $srcFolder -PathType Container)) {
+                OutputWarning "Custom checkfile path $srcFolder not found in template repository."
+                continue
+        }
         Push-Location -Path $srcFolder
         try {
             # Remove unused AL-Go system files

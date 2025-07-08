@@ -552,3 +552,52 @@ function UpdateSettingsFile {
     }
     return $modified
 }
+
+function GetCheckFileFromString() {
+    Param(
+        [string] $path
+    )
+    $path = $_ -replace '\\\\', '/' -replace '\\', '/'
+    $parent = Split-Path $path -Parent
+    $leaf = Split-Path $path -Leaf
+
+    switch ($true) {
+        {($parent -eq '') -and ($leaf -notlike '.*') -and (($leaf -like '*.*') -or ($leaf -match '\*'))} {
+            $pattern = $path
+            $folder = '.'
+        }
+        {($parent -ne '') -and ($leaf -like '*.*') -or ($leaf -match '\*')} {
+            $pattern = $leaf
+            $folder = $parent
+        }
+        default {
+            $pattern = '*'
+            $folder = $path
+        }
+    }
+
+    return @{ 'dstPath' = $folder; 'srcPath' = $folder; 'pattern' = $pattern; 'type' = "custom" }
+}
+
+function GetCustomTemplateFiles {
+    Param(
+        [hashtable] $repoSettings
+    )
+    $checkFiles = @()
+
+    if (!($repoSettings.ContainsKey('templateFiles'))) {
+        return $checkFiles
+    }
+    $templateFiles = $repoSettings.templateFiles
+
+    $templateFiles | ForEach-Object {
+        if ($_ -ne '') {
+            Write-Host "::debug::Adding custom checkfile: $_"
+            $checkFile = GetCheckFileFromString -path $_
+            if ($checkFile) {
+                $checkFiles += $checkFile
+            }
+        }
+    }
+    return $checkFiles
+}
