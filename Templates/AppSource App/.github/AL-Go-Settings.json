@@ -1,5 +1,36 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/settings.schema.json",
+  "buildModes": [
+    "Default"
+  ],
+  "customCodeCops": [
+    "https://github.com/StefanMaron/BusinessCentral.LinterCop/releases/latest/download/BusinessCentral.LinterCop.current.dll"
+  ],
+  "doNotPublishApps": true,
+  "enableCodeCop": true,
+  "enableAppSourceCop": true,
+  "enableUICop": true,
+  "CICDPullRequestBranches": [
+    "main",
+    "test/main"
+  ],
+  "CICDPushBranches": [
+    "main",
+    "release/*",
+    "feature/*",
+    "test/main"
+  ],
+  "githubRunner": "ubuntu-latest",
+  "rulesetFile": "CegekaAT.ruleset.json",
+  "runs-on": "ubuntu-latest",
+  "skipUpgrade": true,
+  "BcContainerHelperVersion": "6.1.6",
+  "templateUrl": "https://github.com/CBS-BC-AT/AL-Go@main",
+  "templateFiles": [
+    ".github/DeployTo*.ps1",
+    ".schemas/*"
+  ],
   "type": "AppSource App",
-  "templateUrl": "https://github.com/microsoft/AL-Go-AppSource@main"
+  "useCompilerFolder": true,
+  "vsixFile": "latest"
 }
