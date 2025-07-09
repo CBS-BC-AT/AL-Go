@@ -105,7 +105,7 @@ try {
         "appSourceAppRepo" = "$($config.githubOwner)/$($config.appSourceAppRepo)"
     }
 
-    if ($config.branch -eq 'preview' -or $config.githubOwner -ne 'microsoft') {
+    if ($config.branch -eq 'preview') {
         # When deploying to preview, we are NOT going to deploy to a branch in the AL-Go-Actions repository
         # Instead, we are going to have AL-Go-PTE and AL-Go-AppSource point directly to the SHA in AL-Go
         $dstOwnerAndRepo += @{
