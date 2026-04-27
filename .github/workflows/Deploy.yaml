@@ -54,7 +54,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -87,7 +87,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -129,7 +129,7 @@ jobs:
     steps:
       - name: Harden Runner
         if: github.repository_owner == 'microsoft'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
 
@@ -152,9 +152,9 @@ jobs:
             }
           }
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+      - uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
         id: app-token
         if: ${{ vars.APP_ID != '' }}
         with:
@@ -214,7 +214,7 @@ jobs:
 
       - name: Create release
         if: github.repository_owner == 'microsoft' && needs.Inputs.outputs.createRelease == 'true'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: createrelease
         env:
           branch: ${{ needs.Inputs.outputs.branch }}
