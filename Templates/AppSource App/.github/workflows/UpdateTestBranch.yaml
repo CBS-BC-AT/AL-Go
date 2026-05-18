@@ -37,14 +37,14 @@ jobs:
 
       - name: Add reaction to comment
         if: ${{ env.SKIP_ALL == 'false' }}
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ github.event.comment.id }}
           reactions: rocket
 
       - name: Checkout repository
         if: ${{ env.SKIP_ALL == 'false' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -378,7 +378,7 @@ jobs:
 
       - name: Add reaction based on cherry-pick outcome
         if: ${{ env.SKIP_ALL == 'false' }}
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ github.event.comment.id }}
           reactions: ${{ steps.cherry_pick.outcome == 'success' && '+1' || '-1' }}
@@ -505,7 +505,7 @@ jobs:
 
       - name: Clean up comments
         if: ${{ env.SKIP_ALL == 'false' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
